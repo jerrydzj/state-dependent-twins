@@ -30,8 +30,9 @@ Optional body.
   folder's README, run metadata in the experiment outputs (which record the commit SHA that produced them).
 - Subject: imperative mood ("add", not "added"); lowercase after the colon except identifiers and proper nouns
   (`PX1`, `Llama 3.1`, `FRED`); at most 72 characters; ASCII only; no trailing period; no scopes.
-- Keep history linear (rebase, don't merge). Annotated tags mark snapshots that write-ups cite (`v0.1-mvp`) and frozen
-  predictions (`prereg/<name>`). Git dates are self-reported, so also archive `prereg/` tags externally.
+- Commit straight to `main` unless asked to branch. Keep history linear (rebase, don't merge). Annotated tags mark
+  snapshots that write-ups cite (`v0.1-mvp`) and frozen predictions (`prereg/<name>`). Git dates are self-reported, so
+  also archive `prereg/` tags externally.
 
 ```
 data: add FRED macro series and SCA interview windows
