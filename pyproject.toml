@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sdt"
+version = "0.0.0"
+description = "LLM digital twins vs supervised models on state-dependent survey responses"
+license = "MIT"
+requires-python = ">=3.14"
+dependencies = [
+    "matplotlib==3.11.2",
+    "numpy==2.5.4",
+    "pandas==3.0.6",
+    "pyarrow==26.0.0",
+    "scikit-learn==1.9.1",
+    "scipy==1.18.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ipykernel==7.4.0",
+    "jupyterlab==4.6.4",
+    "nbconvert==7.17.2",
+    "pytest==9.1.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

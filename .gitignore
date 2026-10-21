@@ -1,6 +1,7 @@
 .venv/
 .ipynb_checkpoints/
 __pycache__/
+*.egg-info/
 .DS_Store
 
 # Not redistributable; see data/README.md and data/external/fred/README.md
