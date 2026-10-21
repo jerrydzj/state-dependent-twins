@@ -18,6 +18,9 @@ they disagree, fix one of them in the same commit.
 | Binary | 0/1 | 0/1 |
 | Missing | Its own level, `NR` | NaN |
 
+MNL one-hot drops one **reference level** per input: the most common one, so each coefficient compares a group with the
+largest group. NR is never the reference. Feature columns are fixed by this spec, never inferred from the data.
+
 Why: MNL is linear, so an integer would force equal steps between levels; one-hot lets each level find its own effect.
 Trees split on thresholds, so an integer keeps the order without assuming equal steps. Missing values get a level or a
 NaN rather than an imputed value, because the models must predict every evaluation respondent, and on web 9-13% leave
