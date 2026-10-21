@@ -36,3 +36,11 @@ Copyright © 1946–2026 The Regents of the University of Michigan.
 ## Added data
 
 `external/` holds macro series and tables added for this project. See `external/README.md`.
+
+## Processed data (not in git)
+
+`processed/` holds tables rebuilt from the files above by code. Never edit them by hand.
+
+| File | Built by | Contents |
+|---|---|---|
+| `mvp_clean.parquet` | `python -m sdt.mvp.clean` | MVP columns cleaned per `docs/mvp/cleaning.md`, Feb 2017 on |
