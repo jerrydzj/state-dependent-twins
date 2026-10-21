@@ -2,8 +2,15 @@
 the order of the predict_proba columns."""
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.linear_model import LogisticRegression
 
 from sdt.mvp.clean import CLASSES
+
+
+def mnl():
+    """Multinomial logit by unpenalised, weighted maximum likelihood (C=inf turns the L2 penalty off). Use with
+    encode.mnl_features."""
+    return LogisticRegression(C=np.inf, max_iter=2000, tol=1e-8)
 
 
 class BaselineShares(ClassifierMixin, BaseEstimator):

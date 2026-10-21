@@ -4,7 +4,7 @@ import pytest
 
 from sdt.mvp.clean import clean, load_raw
 from sdt.mvp.encode import mnl_features
-from sdt.mvp.models import BaselineShares
+from sdt.mvp.models import BaselineShares, mnl
 from sdt.mvp.score import evaluate, log_loss, predict, skill
 from sdt.mvp.windows import EVAL_START, HORIZON, TRAIN_END, split
 from sdt.paths import DATA, RAW_CSV
@@ -50,3 +50,12 @@ def test_real_data_baseline():
     _, test = split(df)
     oracle = evaluate(BaselineShares(), mnl_features, pd.concat([test.assign(YYYYMM=TRAIN_END), test]))
     assert (oracle <= loss).all() and (oracle > 0).all()
+
+
+def test_mnl_is_unpenalised_weighted_mle():
+    # With one binary feature the MLE reproduces the weighted class shares in each group exactly; a penalty would not
+    X = pd.DataFrame({'web': [0, 0, 0, 1, 1, 1, 1]})
+    y = ['fav', 'mid', 'unf', 'fav', 'fav', 'unf', 'mid']
+    w = [1, 1, 2, 1, 3, 2, 2]
+    P = predict(mnl().fit(X, y, sample_weight=w), X)
+    assert P[0] == pytest.approx([0.25, 0.25, 0.5], abs=1e-4) and P[3] == pytest.approx([0.5, 0.25, 0.25], abs=1e-4)
