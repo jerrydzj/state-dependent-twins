@@ -13,3 +13,6 @@ data/external/fred/NASDAQCOM.csv
 data/external/fred/UMCSENT.csv
 data/external/fred/MICH.csv
 data/external/fred/MORTGAGE30US.csv
+
+# Per-respondent predictions are a derivative of the microdata
+experiments/**/predictions.parquet

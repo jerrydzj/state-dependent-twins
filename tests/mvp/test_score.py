@@ -50,7 +50,7 @@ def test_real_data_baseline():
     loss = scores.log_loss
     # No constant can beat the evaluation window's own shares, so the baseline's loss must be at least theirs
     _, test = split(df)
-    oracle = evaluate(BaselineShares(), mnl_features, pd.concat([test.assign(YYYYMM=TRAIN_END), test])).log_loss
+    oracle = evaluate(BaselineShares(), mnl_features, pd.concat([test.assign(YYYYMM=TRAIN_END, CASEID=test.CASEID + 10**7), test])).log_loss
     assert (oracle <= loss).all() and (oracle > 0).all()
 
 

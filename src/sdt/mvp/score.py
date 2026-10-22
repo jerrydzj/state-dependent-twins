@@ -83,19 +83,34 @@ def predict(model, X):
     return P[:, [list(model.classes_).index(c) for c in CLASSES]]
 
 
-def evaluate(model, encode, df, items=tuple(OUTCOMES)):
-    """Fit a fresh copy of `model` per item on the training window; return evaluation log loss and Wasserstein
-    distance per item. `model` can also be a dict of one model per item (e.g. tuned settings)."""
+def fit_predict(model, encode, df, items=tuple(OUTCOMES)):
+    """Fit a fresh copy of `model` per item on the training window and predict the evaluation rows that answered the
+    item. One row per (item, interview): CASEID and the probability of each class. `model` can also be a dict of one
+    model per item (e.g. tuned settings)."""
     train, test = split(df)
-    rows = {}
+    out = []
     for item in items:
         X, y, w = item_data(train, item, encode)
         m = clone(model[item] if isinstance(model, dict) else model).fit(X, y, sample_weight=w)
-        X, y, w = item_data(test, item, encode)
-        P = predict(m, X)
-        rows[item] = {'log_loss': log_loss(y, P, w),
-                      'wasserstein': distribution_score(y, P, w, test.loc[y.index, 'YYYYMM'])}
+        X, y, _ = item_data(test, item, encode)
+        out.append(pd.DataFrame(predict(m, X), columns=CLASSES).assign(item=item, CASEID=test.loc[y.index, 'CASEID'].to_numpy()))
+    return pd.concat(out, ignore_index=True)[['item', 'CASEID'] + CLASSES]
+
+
+def score_predictions(pred, df):
+    """Log loss and Wasserstein distance per item for saved predictions, with answers and weights from the clean table."""
+    key = df.set_index('CASEID')
+    rows = {}
+    for item, g in pred.groupby('item', sort=False):
+        a = key.loc[g.CASEID]
+        y, P = a[item].astype(str), g[CLASSES].to_numpy()
+        rows[item] = {'log_loss': log_loss(y, P, a.WT), 'wasserstein': distribution_score(y, P, a.WT, a.YYYYMM)}
     return pd.DataFrame(rows).T
+
+
+def evaluate(model, encode, df, items=tuple(OUTCOMES)):
+    """Fit on the training window and return evaluation log loss and Wasserstein distance per item."""
+    return score_predictions(fit_predict(model, encode, df, items), df)
 
 
 def benchmarks(df, items=tuple(OUTCOMES), n_boot=200, seed=0):
