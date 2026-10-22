@@ -2,6 +2,7 @@
 the order of the predict_proba columns."""
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 
 from sdt.mvp.clean import CLASSES
@@ -11,6 +12,12 @@ def mnl():
     """Multinomial logit by unpenalised, weighted maximum likelihood (C=inf turns the L2 penalty off). Use with
     encode.mnl_features."""
     return LogisticRegression(C=np.inf, max_iter=2000, tol=1e-8)
+
+
+def gb(**params):
+    """Gradient boosting with learning rate 0.05 and no built-in early stopping (it would hold out random rows, mixing
+    months and people). Tree count and size come from tune.tune. Use with encode.gb_features."""
+    return HistGradientBoostingClassifier(learning_rate=0.05, early_stopping=False, random_state=0, **params)
 
 
 class BaselineShares(ClassifierMixin, BaseEstimator):

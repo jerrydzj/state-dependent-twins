@@ -35,12 +35,13 @@ def predict(model, X):
 
 
 def evaluate(model, encode, df, items=tuple(OUTCOMES)):
-    """Fit a fresh copy of `model` per item on the training window; return evaluation log loss per item."""
+    """Fit a fresh copy of `model` per item on the training window; return evaluation log loss per item. `model` can
+    also be a dict of one model per item (e.g. tuned settings)."""
     train, test = split(df)
     loss = {}
     for item in items:
         X, y, w = item_data(train, item, encode)
-        m = clone(model).fit(X, y, sample_weight=w)
+        m = clone(model[item] if isinstance(model, dict) else model).fit(X, y, sample_weight=w)
         X, y, w = item_data(test, item, encode)
         loss[item] = log_loss(y, predict(m, X), w)
     return pd.Series(loss, name='log_loss')
