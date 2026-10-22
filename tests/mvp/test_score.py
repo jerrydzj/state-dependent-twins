@@ -5,7 +5,7 @@ import pytest
 from sdt.mvp.clean import clean, load_raw
 from sdt.mvp.encode import mnl_features
 from sdt.mvp.models import BaselineShares, mnl
-from sdt.mvp.score import evaluate, log_loss, predict, skill
+from sdt.mvp.score import distribution_score, evaluate, log_loss, noise_floor, predict, skill, wasserstein
 from sdt.mvp.windows import EVAL_START, HORIZON, TRAIN_END, split
 from sdt.paths import DATA, RAW_CSV
 
@@ -44,11 +44,13 @@ def test_windows_match_interview_dates():
 @pytest.mark.skipif(not RAW_CSV.exists(), reason='data/data.csv not downloaded')
 def test_real_data_baseline():
     df = clean(load_raw())
-    loss = evaluate(BaselineShares(), mnl_features, df)
-    assert loss.index.tolist() == ['PAGO', 'PEXP', 'BUS12', 'BUS5', 'DUR']
+    scores = evaluate(BaselineShares(), mnl_features, df)
+    assert scores.index.tolist() == ['PAGO', 'PEXP', 'BUS12', 'BUS5', 'DUR']
+    assert scores.columns.tolist() == ['log_loss', 'wasserstein']
+    loss = scores.log_loss
     # No constant can beat the evaluation window's own shares, so the baseline's loss must be at least theirs
     _, test = split(df)
-    oracle = evaluate(BaselineShares(), mnl_features, pd.concat([test.assign(YYYYMM=TRAIN_END), test]))
+    oracle = evaluate(BaselineShares(), mnl_features, pd.concat([test.assign(YYYYMM=TRAIN_END), test])).log_loss
     assert (oracle <= loss).all() and (oracle > 0).all()
 
 
@@ -59,3 +61,28 @@ def test_mnl_is_unpenalised_weighted_mle():
     w = [1, 1, 2, 1, 3, 2, 2]
     P = predict(mnl().fit(X, y, sample_weight=w), X)
     assert P[0] == pytest.approx([0.25, 0.25, 0.5], abs=1e-4) and P[3] == pytest.approx([0.5, 0.25, 0.25], abs=1e-4)
+
+
+def test_wasserstein_by_hand():
+    # Predicted 20/30/50 vs actual 16/35/49: half the fav gap (0.04) plus half the unf gap (0.01)
+    assert wasserstein([0.2, 0.3, 0.5], [0.16, 0.35, 0.49]) == pytest.approx(0.025)
+    assert wasserstein([0.2, 0.3, 0.5], [0.2, 0.3, 0.5]) == 0
+    assert wasserstein([1, 0, 0], [0, 0, 1]) == 1                                  # opposite ends of the scale
+    assert wasserstein([1 / 3] * 3, [1, 0, 0]) == pytest.approx(0.5)               # uniform guess vs all fav
+
+
+def test_distribution_score_averages_months():
+    y = ['fav', 'unf', 'fav', 'fav']
+    month = [1, 1, 2, 2]
+    P = [[0.5, 0, 0.5]] * 4                       # month 1 actual 50/0/50: distance 0; month 2 actual 100/0/0: 0.5
+    assert distribution_score(y, P, [1, 1, 1, 1], month) == pytest.approx(0.25)
+    assert distribution_score(y, P, [1, 3, 1, 1], month) == pytest.approx(0.125 + 0.25)   # month 1 actual 25/0/75
+
+
+def test_noise_floor_shrinks_with_sample_size():
+    rng = np.random.default_rng(1)
+    floors = []
+    for n in (100, 1600):
+        y = rng.choice(['fav', 'mid', 'unf'], size=3 * n)
+        floors.append(noise_floor(y, np.ones(3 * n), np.repeat([1, 2, 3], n), n_boot=100))
+    assert 0 < floors[1] < floors[0] / 2                                           # about 1/sqrt(n): 4x smaller
