@@ -5,8 +5,9 @@
 Tunes gradient boosting, fits the baseline shares, multinomial logit and gradient boosting per item on the training
 window, predicts the evaluation window and scores both levels. Writes:
 
-- scores.csv: log loss and Wasserstein distance per model and item, with skill against the baseline shares, plus the
-  uniform guess and the bootstrap noise floor as reference rows.
+- scores.csv: log loss and Wasserstein distance per model and item, with skill against the baseline shares and 95%
+  bootstrap intervals (`_lo`, `_hi`); rows for the MNL - GB difference; and the uniform guess and the bootstrap noise
+  floor as reference rows.
 - gb_settings.json: the chosen setting per item, and each grid setting's best validation loss and tree count.
 - run.json: commit, data hash, date, package versions and seeds.
 - predictions.parquet: every model's probabilities for every evaluation interview (not in git: a derivative of the
@@ -25,7 +26,7 @@ from sdt.mvp import tune as tuning
 from sdt.mvp.clean import OUT_PATH, OUTCOMES
 from sdt.mvp.encode import gb_features, mnl_features
 from sdt.mvp.models import BaselineShares, gb, mnl
-from sdt.mvp.score import benchmarks, fit_predict, score_predictions, skill
+from sdt.mvp.score import benchmarks, bootstrap, fit_predict, score_predictions, skill
 from sdt.mvp.windows import split
 from sdt.paths import RAW_CSV, ROOT
 
@@ -35,6 +36,24 @@ FEATURE_SETS = {'demographics': {'mnl': mnl_features, 'gb': gb_features}}   # na
 
 def git(*args):
     return subprocess.run(['git', *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+
+
+def score_run(pred, df):
+    """Scores table for a run's predictions: point scores and skill per model and item, the MNL - GB difference,
+    bootstrap intervals, and the uniform guess and noise floor as reference rows. Uses only saved predictions."""
+    models = list(pred.model.unique())
+    scores = pd.concat([score_predictions(g, df).assign(model=k) for k, g in pred.groupby('model', sort=False)])
+    diff = scores[scores.model == 'mnl'].drop(columns='model') - scores[scores.model == 'gb'].drop(columns='model')
+    ref = benchmarks(df)
+    scores = pd.concat([scores, diff.assign(model='mnl-gb'),
+                        ref[['uniform_log_loss', 'uniform_wasserstein']].set_axis(['log_loss', 'wasserstein'], axis=1)
+                        .assign(model='uniform'),
+                        ref[['floor_wasserstein']].set_axis(['wasserstein'], axis=1).assign(model='floor')])
+    scores = scores.rename_axis('item').reset_index()
+    base = scores[scores.model == 'baseline'].set_index('item')
+    for s in ['log_loss', 'wasserstein']:
+        scores[f'{s}_skill'] = skill(scores[s], scores.item.map(base[s])).where(scores.model.isin(models))
+    return scores.merge(bootstrap(pred, df), on=['item', 'model'], how='left')
 
 
 def run(name):
@@ -56,16 +75,7 @@ def run(name):
     models = {'baseline': (BaselineShares(), encoders['mnl']), 'mnl': (mnl(), encoders['mnl']),
               'gb': ({item: gb(**s['chosen']) for item, s in settings.items()}, encoders['gb'])}
     pred = pd.concat([fit_predict(m, enc, df).assign(model=k) for k, (m, enc) in models.items()], ignore_index=True)
-    scores = pd.concat([score_predictions(g, df).assign(model=k) for k, g in pred.groupby('model', sort=False)])
-    ref = benchmarks(df)
-    scores = pd.concat([scores,
-                        ref[['uniform_log_loss', 'uniform_wasserstein']].set_axis(['log_loss', 'wasserstein'], axis=1)
-                        .assign(model='uniform'),
-                        ref[['floor_wasserstein']].set_axis(['wasserstein'], axis=1).assign(model='floor')])
-    scores = scores.rename_axis('item').reset_index()
-    base = scores[scores.model == 'baseline'].set_index('item')
-    for s in ['log_loss', 'wasserstein']:
-        scores[f'{s}_skill'] = skill(scores[s], scores.item.map(base[s]))
+    scores = score_run(pred, df)
 
     scores.to_csv(out / 'scores.csv', index=False, float_format='%.6f')
     json.dump(settings, open(out / 'gb_settings.json', 'w'), indent=1, default=int)
@@ -75,7 +85,7 @@ def run(name):
                'date': time.strftime('%Y-%m-%d'), 'runtime_seconds': round(time.time() - start),
                'python': sys.version.split()[0],
                'packages': {p: version(p) for p in ['numpy', 'pandas', 'scikit-learn']},
-               'seeds': {'cv_months': tuning.SEED, 'gb': 0, 'bootstrap': 0},
+               'seeds': {'cv_months': tuning.SEED, 'gb': 0, 'noise_floor': 0, 'bootstrap': 0},
                'tuning': {'grid': tuning.GRID, 'max_trees': tuning.MAX_TREES, 'folds': tuning.N_FOLDS}},
               open(out / 'run.json', 'w'), indent=1)
     print(scores.round(4).to_string())

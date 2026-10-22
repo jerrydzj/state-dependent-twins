@@ -5,7 +5,7 @@
   months (as in Kolluri et al. 2025, with months in place of experimental conditions).
 
 Both are compared with the baseline shares through `skill`, and with a uniform guess and a bootstrap noise floor
-through `benchmarks`.
+through `benchmarks`. `bootstrap` gives 95% intervals for every score, skill and model difference.
 """
 import numpy as np
 import pandas as pd
@@ -106,6 +106,54 @@ def score_predictions(pred, df):
         y, P = a[item].astype(str), g[CLASSES].to_numpy()
         rows[item] = {'log_loss': log_loss(y, P, a.WT), 'wasserstein': distribution_score(y, P, a.WT, a.YYYYMM)}
     return pd.DataFrame(rows).T
+
+
+def bootstrap(pred, df, n_boot=1000, seed=0, pairs=(('mnl', 'gb'),)):
+    """95% percentile intervals from a paired bootstrap over respondents within evaluation months.
+
+    Each draw redraws every month's respondents with replacement (the same count as the month had) and scores every
+    model in `pred` on that same draw, so noise shared by the models cancels in skill and in differences. Months are
+    held fixed: the intervals count the noise from which respondents were interviewed, not from which months occurred.
+    Returns one row per item and model with `_lo` and `_hi` columns for both scores and, if a `baseline` model is
+    present, their skill; plus one row per pair (a, b) named 'a-b' for the difference a - b in both scores.
+    """
+    rng = np.random.default_rng(seed)
+    key = df.set_index('CASEID')
+    rows = []
+    for item, g in pred.groupby('item', sort=False):
+        P = {m: gm.set_index('CASEID') for m, gm in g.groupby('model', sort=False)}
+        ids = next(iter(P.values())).index
+        a = key.loc[ids]
+        Y = np.eye(len(CLASSES))[class_index(a[item].astype(str))]
+        w, month = a.WT.to_numpy(float), a.YYYYMM.to_numpy()
+        Pm = {m: p.loc[ids, CLASSES].to_numpy() for m, p in P.items()}
+        nll = {m: -np.log(np.clip((p * Y).sum(axis=1), 1e-15, 1)) for m, p in Pm.items()}
+        loss_num, total_w, dist = {m: 0 for m in P}, 0, {m: [] for m in P}
+        for t in np.unique(month):
+            s = month == t
+            n = s.sum()
+            counts = np.zeros((n_boot, n))
+            np.add.at(counts, (np.arange(n_boot)[:, None], rng.integers(0, n, size=(n_boot, n))), 1)
+            cw = counts * w[s]                                     # each draw's weight on each respondent
+            total_w = total_w + cw.sum(axis=1)
+            actual = cw @ Y[s] / cw.sum(axis=1, keepdims=True)
+            for m in P:
+                loss_num[m] = loss_num[m] + cw @ nll[m][s]
+                dist[m].append(wasserstein(cw @ Pm[m][s] / cw.sum(axis=1, keepdims=True), actual))
+        draws = {m: {'log_loss': loss_num[m] / total_w, 'wasserstein': np.mean(dist[m], axis=0)} for m in P}
+        ci = lambda x: dict(zip(['lo', 'hi'], np.percentile(x, [2.5, 97.5])))
+        for m, d in draws.items():
+            r = {'item': item, 'model': m}
+            for s, x in d.items():
+                r |= {f'{s}_{k}': v for k, v in ci(x).items()}
+                if 'baseline' in draws:
+                    r |= {f'{s}_skill_{k}': v for k, v in ci(skill(x, draws['baseline'][s])).items()}
+            rows.append(r)
+        for m1, m2 in pairs:
+            if m1 in draws and m2 in draws:
+                rows.append({'item': item, 'model': f'{m1}-{m2}',
+                             **{f'{s}_{k}': v for s in draws[m1] for k, v in ci(draws[m1][s] - draws[m2][s]).items()}})
+    return pd.DataFrame(rows)
 
 
 def evaluate(model, encode, df, items=tuple(OUTCOMES)):

@@ -5,7 +5,8 @@ import pytest
 from sdt.mvp.clean import clean, load_raw
 from sdt.mvp.encode import mnl_features
 from sdt.mvp.models import BaselineShares, mnl
-from sdt.mvp.score import distribution_score, evaluate, log_loss, noise_floor, predict, skill, wasserstein
+from sdt.mvp.score import (bootstrap, distribution_score, evaluate, log_loss, noise_floor, predict, score_predictions, skill,
+                           wasserstein)
 from sdt.mvp.windows import EVAL_START, HORIZON, TRAIN_END, split
 from sdt.paths import DATA, RAW_CSV
 
@@ -86,3 +87,20 @@ def test_noise_floor_shrinks_with_sample_size():
         y = rng.choice(['fav', 'mid', 'unf'], size=3 * n)
         floors.append(noise_floor(y, np.ones(3 * n), np.repeat([1, 2, 3], n), n_boot=100))
     assert 0 < floors[1] < floors[0] / 2                                           # about 1/sqrt(n): 4x smaller
+
+
+def test_bootstrap_is_paired():
+    rng = np.random.default_rng(0)
+    n = 600
+    df = pd.DataFrame({'CASEID': np.arange(n), 'YYYYMM': np.repeat([202409, 202410, 202411], n // 3),
+                       'WT': rng.uniform(0.5, 1.5, n), 'PAGO': rng.choice(['fav', 'mid', 'unf'], n, p=[.5, .3, .2])})
+    base = pd.DataFrame({'item': 'PAGO', 'CASEID': df.CASEID, 'fav': 0.4, 'mid': 0.3, 'unf': 0.3})
+    good = base.assign(fav=0.5, mid=0.3, unf=0.2)
+    pred = pd.concat([base.assign(model='baseline'), good.assign(model='mnl'), base.assign(model='gb')])
+    ci = bootstrap(pred, df, n_boot=200).set_index('model')
+    assert ci.loc['gb', 'log_loss_skill_lo'] == ci.loc['gb', 'log_loss_skill_hi'] == 0     # same as the baseline
+    assert ci.loc['mnl', 'log_loss_skill_lo'] > 0                                           # the true shares win
+    point = score_predictions(pred[pred.model == 'mnl'], df).loc['PAGO']
+    for s in ['log_loss', 'wasserstein']:
+        assert ci.loc['mnl', f'{s}_lo'] <= point[s] <= ci.loc['mnl', f'{s}_hi']
+    assert ci.loc['mnl-gb', 'log_loss_hi'] < 0                                              # mnl's loss is lower
