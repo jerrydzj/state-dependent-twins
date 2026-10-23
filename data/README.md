@@ -43,4 +43,4 @@ Copyright © 1946–2026 The Regents of the University of Michigan.
 
 | File | Built by | Contents |
 |---|---|---|
-| `mvp_clean.parquet` | `python -m sdt.mvp.clean` | MVP columns cleaned per `docs/mvp/cleaning.md`, Feb 2017 on |
+| `mvp_clean.parquet` | `python -m sdt.mvp.clean` | MVP columns cleaned as described in section 1 of `notebooks/03_mvp_first_run.ipynb`, Feb 2017 on |

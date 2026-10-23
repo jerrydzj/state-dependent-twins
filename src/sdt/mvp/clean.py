@@ -1,4 +1,5 @@
-"""Clean the raw Surveys of Consumers file for the MVP, as specified in docs/mvp/cleaning.md.
+"""Clean the raw Surveys of Consumers file for the MVP, as described in section 1 of
+notebooks/03_mvp_first_run.ipynb.
 
 One row per interview from FIRST_MONTH on. Outcomes are fav/mid/unf, with DK/NA as NaN (models drop them per item).
 Ordered inputs are nullable integers, unordered inputs are categoricals, and missing is NaN throughout. Encoding for

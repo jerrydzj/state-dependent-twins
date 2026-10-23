@@ -1,4 +1,5 @@
-"""Turn the clean MVP table into features for each model family, as specified in docs/mvp/cleaning.md.
+"""Turn the clean MVP table into features for each model family, as described in section 1 of
+notebooks/03_mvp_first_run.ipynb.
 
 Both encoders take the output of `clean.clean` and return one feature row per interview. Feature columns are fixed by
 the spec, never inferred from the data, so training and evaluation rows always line up.
