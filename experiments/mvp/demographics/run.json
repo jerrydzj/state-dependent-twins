@@ -1,0 +1,61 @@
+{
+ "name": "demographics",
+ "commit": "6294d51dc5633eaddbd2f1eb2f04a135ad247455",
+ "data_csv_sha256": "5e0a7e1cd2a04e8378e43bc1b4316b4bb5387241bb40744f0c50c6f7cd49ca22",
+ "date": "2026-10-22",
+ "runtime_seconds": 1246,
+ "python": "3.14.6",
+ "packages": {
+  "numpy": "2.5.4",
+  "pandas": "3.0.6",
+  "scikit-learn": "1.9.1"
+ },
+ "seeds": {
+  "cv_months": 0,
+  "gb": 0,
+  "noise_floor": 0,
+  "bootstrap": 0
+ },
+ "tuning": {
+  "grid": [
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 50
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 200
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 800
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 50
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 200
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 800
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 50
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 200
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 800
+   }
+  ],
+  "max_trees": 1000,
+  "folds": 5
+ }
+}

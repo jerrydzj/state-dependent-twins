@@ -1,0 +1,317 @@
+{
+ "PAGO": {
+  "chosen": {
+   "max_leaf_nodes": 16,
+   "min_samples_leaf": 200,
+   "max_iter": 123
+  },
+  "grid": [
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 50,
+    "val_log_loss": 1.0238758397589676,
+    "best_trees": 395
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 200,
+    "val_log_loss": 1.0238282422061735,
+    "best_trees": 562
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 800,
+    "val_log_loss": 1.024153562172677,
+    "best_trees": 995
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 50,
+    "val_log_loss": 1.02294009438971,
+    "best_trees": 229
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 200,
+    "val_log_loss": 1.0230626172721233,
+    "best_trees": 142
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 800,
+    "val_log_loss": 1.0238313937529546,
+    "best_trees": 267
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 50,
+    "val_log_loss": 1.022350367836429,
+    "best_trees": 168
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 200,
+    "val_log_loss": 1.0222946863211013,
+    "best_trees": 123
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 800,
+    "val_log_loss": 1.0237550153413284,
+    "best_trees": 188
+   }
+  ]
+ },
+ "PEXP": {
+  "chosen": {
+   "max_leaf_nodes": 16,
+   "min_samples_leaf": 200,
+   "max_iter": 75
+  },
+  "grid": [
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.963884448695646,
+    "best_trees": 295
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.9635978145767659,
+    "best_trees": 384
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.9636855820490922,
+    "best_trees": 511
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.9634877613808441,
+    "best_trees": 164
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.9631432775726154,
+    "best_trees": 176
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.9635490315896613,
+    "best_trees": 173
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.9633295862655902,
+    "best_trees": 87
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.9630833434795815,
+    "best_trees": 75
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.9638373552318968,
+    "best_trees": 77
+   }
+  ]
+ },
+ "BUS12": {
+  "chosen": {
+   "max_leaf_nodes": 16,
+   "min_samples_leaf": 200,
+   "max_iter": 51
+  },
+  "grid": [
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.8319655329461303,
+    "best_trees": 207
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.8321536574736771,
+    "best_trees": 318
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.8325187754406058,
+    "best_trees": 416
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.8315537245511946,
+    "best_trees": 93
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.831797571548851,
+    "best_trees": 64
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.8331426231808257,
+    "best_trees": 311
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.8314329447984563,
+    "best_trees": 49
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.8312803795485517,
+    "best_trees": 51
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.8334690165697469,
+    "best_trees": 88
+   }
+  ]
+ },
+ "BUS5": {
+  "chosen": {
+   "max_leaf_nodes": 16,
+   "min_samples_leaf": 50,
+   "max_iter": 46
+  },
+  "grid": [
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.893631028591416,
+    "best_trees": 221
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.8934378311935023,
+    "best_trees": 215
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.8938283291948929,
+    "best_trees": 136
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.8932929334096683,
+    "best_trees": 84
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.8930914849480454,
+    "best_trees": 100
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.8937396611800188,
+    "best_trees": 92
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.8927711551383238,
+    "best_trees": 46
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.8928770354056776,
+    "best_trees": 56
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.8937898461199479,
+    "best_trees": 51
+   }
+  ]
+ },
+ "DUR": {
+  "chosen": {
+   "max_leaf_nodes": 16,
+   "min_samples_leaf": 200,
+   "max_iter": 57
+  },
+  "grid": [
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.7848310639812391,
+    "best_trees": 159
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.7851261605118205,
+    "best_trees": 167
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.7855738890884177,
+    "best_trees": 261
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.7848887705766943,
+    "best_trees": 85
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.7848466356069919,
+    "best_trees": 81
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.785585911765636,
+    "best_trees": 52
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 50,
+    "val_log_loss": 0.7846220741231535,
+    "best_trees": 61
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 200,
+    "val_log_loss": 0.7845807734976987,
+    "best_trees": 57
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 800,
+    "val_log_loss": 0.7855127553955292,
+    "best_trees": 68
+   }
+  ]
+ }
+}
