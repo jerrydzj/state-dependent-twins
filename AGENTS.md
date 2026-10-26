@@ -53,5 +53,6 @@ it, check out that commit in a worktree and start Python with `-S`, with the wor
 
 ## Experiments
 
-Each run writes a new folder under `experiments/` at one commit, recorded in its `run.json`, and nothing changes the
-folder afterwards. Rescoring or refitting is a new run.
+Each run writes a new folder `experiments/<stage>/<YYYY-MM-DD>-<description>/` at one commit, recorded in its
+`run.json`, and nothing changes the folder afterwards. The description says what the run contains
+(`supervised-demographics-state`). Rescoring or refitting is a new run.
