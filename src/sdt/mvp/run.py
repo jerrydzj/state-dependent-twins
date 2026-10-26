@@ -3,15 +3,17 @@ experiments/mvp/<date>-<description>/, where the description says what the run c
 
     python -m sdt.mvp.run supervised-macro-politics-ridge
 
-For each feature set, tunes gradient boosting, then fits the multinomial logit and gradient boosting per item on the
-training window; the baseline shares are fitted once. Models are named <family>_<feature set>, e.g.
-`mnl_demographics_macro_politics`. Predicts the evaluation window and scores both levels. Writes:
+For each feature set, tunes the ridge logit and gradient boosting, then fits the multinomial logit, the ridge logit and
+gradient boosting per item on the training window; the baseline shares are fitted once. Models are named
+<family>_<feature set>, e.g. `ridge_demographics_macro_politics`. Predicts the evaluation window and scores both
+levels. Writes:
 
 - scores.csv: log loss and Wasserstein distance per evaluation cell (period x party group, see score.cells), model and
   item, with skill against the baseline shares and 95% bootstrap intervals (`_lo`, `_hi`); a row per pair in PAIRS
   for the difference a - b; and the uniform guess and the bootstrap noise floor as reference rows.
 - gb_settings.json: per feature set and item, the chosen setting and each grid setting's best validation loss and
   tree count.
+- ridge_settings.json: per feature set and item, the chosen C (null for no penalty) and each C's validation loss.
 - run.json: commit, data hash, date, package versions and seeds.
 - predictions.parquet: every model's probabilities for every evaluation interview (not in git: a derivative of the
   microdata).
@@ -23,12 +25,13 @@ import sys
 import time
 from importlib.metadata import version
 
+import numpy as np
 import pandas as pd
 
+from sdt.mvp import encode
 from sdt.mvp import tune as tuning
 from sdt.mvp.clean import OUT_PATH, OUTCOMES
-from sdt.mvp import encode
-from sdt.mvp.models import BaselineShares, gb, mnl
+from sdt.mvp.models import BaselineShares, Ridge, gb, mnl
 from sdt.mvp.score import benchmarks, bootstrap, cells, fit_predict, score_predictions, skill
 from sdt.mvp.windows import split
 from sdt.paths import RAW_CSV, ROOT
@@ -37,9 +40,11 @@ EXPERIMENTS = ROOT / 'experiments' / 'mvp'
 FEATURE_SETS = {'demographics': {'mnl': encode.mnl_features, 'gb': encode.gb_features}} | {   # encoder per family
     fs: {'mnl': getattr(encode, f'mnl_{fs}_features'), 'gb': getattr(encode, f'gb_{fs}_features')}
     for fs in ['demographics_macro', 'demographics_politics', 'demographics_macro_politics']}
-# Differences a - b with paired intervals: MNL vs GB within each feature set, and what each set adds to demographics
-PAIRS = ([(f'mnl_{fs}', f'gb_{fs}') for fs in FEATURE_SETS]
-         + [(f'{family}_{fs}', f'{family}_demographics') for fs in list(FEATURE_SETS)[1:] for family in ('mnl', 'gb')])
+FAMILIES = ['mnl', 'ridge', 'gb']
+# Differences a - b with paired intervals: ridge vs MNL and MNL vs GB within each feature set, and what each set adds
+# to demographics within each family
+PAIRS = ([(f'ridge_{fs}', f'mnl_{fs}') for fs in FEATURE_SETS] + [(f'mnl_{fs}', f'gb_{fs}') for fs in FEATURE_SETS]
+         + [(f'{family}_{fs}', f'{family}_demographics') for fs in list(FEATURE_SETS)[1:] for family in FAMILIES])
 
 
 def git(*args):
@@ -89,21 +94,27 @@ def run(description):
     df = pd.read_parquet(OUT_PATH)
     train, _ = split(df)
 
-    settings, models = {}, {'baseline': (BaselineShares(), encode.mnl_features)}
+    settings, ridge_settings, models = {}, {}, {'baseline': (BaselineShares(), encode.mnl_features)}
     for fs, enc in FEATURE_SETS.items():
-        settings[fs] = {}
+        settings[fs], ridge_settings[fs] = {}, {}
         for item in OUTCOMES:
+            C, loss = tuning.tune_ridge(train, item, enc['mnl'])
+            ridge_settings[fs][item] = {'chosen_C': None if np.isinf(C) else C,
+                                        'grid': [{'C': None if np.isinf(c) else c, 'val_log_loss': v} for c, v in loss.items()]}
             best, curves = tuning.tune(train, item, enc['gb'])
             grid = curves.min(axis=1).rename('val_log_loss').to_frame().assign(best_trees=curves.idxmin(axis=1))
             settings[fs][item] = {'chosen': best, 'grid': grid.reset_index().to_dict('records')}
-            print(fs, item, best, f'{time.time() - start:.0f}s', flush=True)
+            print(fs, item, f'C={C:.4g}', best, f'{time.time() - start:.0f}s', flush=True)
         models[f'mnl_{fs}'] = (mnl(), enc['mnl'])
+        models[f'ridge_{fs}'] = ({item: Ridge(np.inf if r['chosen_C'] is None else r['chosen_C'])
+                                  for item, r in ridge_settings[fs].items()}, enc['mnl'])
         models[f'gb_{fs}'] = ({item: gb(**s['chosen']) for item, s in settings[fs].items()}, enc['gb'])
     pred = pd.concat([fit_predict(m, enc, df).assign(model=k) for k, (m, enc) in models.items()], ignore_index=True)
     scores = score_run(pred, df)
 
     scores.to_csv(out / 'scores.csv', index=False, float_format='%.6f')
     json.dump(settings, open(out / 'gb_settings.json', 'w'), indent=1, default=int)
+    json.dump(ridge_settings, open(out / 'ridge_settings.json', 'w'), indent=1)
     pred.to_parquet(out / 'predictions.parquet', index=False)
     json.dump({'name': name, 'commit': git('rev-parse', 'HEAD'),
                'data_csv_sha256': hashlib.sha256(RAW_CSV.read_bytes()).hexdigest(),
@@ -112,7 +123,8 @@ def run(description):
                'packages': {p: version(p) for p in ['numpy', 'pandas', 'scikit-learn']},
                'feature_sets': list(FEATURE_SETS), 'models': list(models), 'pairs': PAIRS,
                'seeds': {'cv_months': tuning.SEED, 'gb': 0, 'noise_floor': 0, 'bootstrap': 0},
-               'tuning': {'grid': tuning.GRID, 'max_trees': tuning.MAX_TREES, 'folds': tuning.N_FOLDS}},
+               'tuning': {'grid': tuning.GRID, 'max_trees': tuning.MAX_TREES, 'folds': tuning.N_FOLDS,
+                          'ridge_C_grid': [None if np.isinf(c) else c for c in tuning.C_GRID]}},
               open(out / 'run.json', 'w'), indent=1)
     print(scores[(scores.period == 'all') & (scores.group == 'all')].round(4).to_string())
 

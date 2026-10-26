@@ -1,21 +1,23 @@
-"""Month-blocked cross-validation of gradient boosting inside the training window.
+"""Month-blocked cross-validation of gradient boosting and the ridge logit inside the training window.
 
 Whole months are assigned to N_FOLDS folds, so no month is split between fitting and validation (once state variables
 are added, a model can't memorise a held-out month). Phone-only and web months are shuffled separately and dealt round
-robin, so web months spread across folds and every fit sees web rows. One fit per setting gives the loss after every
-tree count via staged predictions. The chosen setting minimises weighted log loss averaged over the folds.
+robin, so web months spread across folds and every fit sees web rows. For boosting, one fit per setting gives the loss
+after every tree count via staged predictions. For the ridge logit, each fold fits every penalty in C_GRID. Either way,
+the chosen setting minimises weighted log loss averaged over the folds.
 """
 import numpy as np
 import pandas as pd
 
 from sdt.mvp.clean import CLASSES
 from sdt.mvp.encode import gb_features
-from sdt.mvp.models import gb
+from sdt.mvp.models import Ridge, gb
 from sdt.mvp.score import item_data
 
 GRID = [{'max_leaf_nodes': leaves, 'min_samples_leaf': rows} for leaves in (4, 8, 16) for rows in (50, 200, 800)]
 MAX_TREES = 1000
 N_FOLDS, SEED = 5, 0
+C_GRID = [*10 ** np.arange(-4, 2.5, 0.5), np.inf]    # ridge: 13 penalties, strongest first, then none
 
 
 def month_folds(train):
@@ -57,3 +59,20 @@ def tune(train, item, encode=gb_features, grid=GRID, max_trees=MAX_TREES):
     i, t = np.unravel_index(curves.argmin(), curves.shape)
     curves = pd.DataFrame(curves, index=pd.MultiIndex.from_frame(pd.DataFrame(grid)), columns=np.arange(1, max_trees + 1))
     return {**grid[i], 'max_iter': int(t) + 1}, curves
+
+
+def weighted_log_loss(P, y, w, classes):
+    idx = pd.Series(np.asarray(y)).map({c: i for i, c in enumerate(classes)}).to_numpy(int)
+    return np.average(-np.log(np.clip(P[np.arange(len(idx)), idx], 1e-15, 1)), weights=w)
+
+
+def tune_ridge(train, item, encode, grid=C_GRID):
+    """Return the C with the lowest fold-averaged validation loss, and that loss for every C in the grid."""
+    loss = np.zeros(len(grid))
+    for fit, val in folds(train):
+        X, y, w = item_data(fit, item, encode)
+        Xv, yv, wv = item_data(val, item, encode)
+        for i, C in enumerate(grid):
+            model = Ridge(C).fit(X, y, sample_weight=w)
+            loss[i] += weighted_log_loss(model.predict_proba(Xv), yv, wv, list(model.classes_)) / N_FOLDS
+    return grid[int(loss.argmin())], pd.Series(loss, index=grid, name='val_log_loss').rename_axis('C')

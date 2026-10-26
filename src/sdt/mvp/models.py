@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 
 from sdt.mvp.clean import CLASSES
 
@@ -12,6 +13,26 @@ def mnl():
     """Multinomial logit by unpenalised, weighted maximum likelihood (C=inf turns the L2 penalty off). Use with
     encode.mnl_features."""
     return LogisticRegression(C=np.inf, max_iter=10_000, tol=1e-8)     # state fits need up to ~5,000 iterations
+
+
+class Ridge(ClassifierMixin, BaseEstimator):
+    """Multinomial logit with an L2 (ridge) penalty, by penalised, weighted maximum likelihood. Each column is first
+    standardised to weighted mean 0 and standard deviation 1 on the training rows, so the penalty treats every column
+    alike whatever its units. C is scikit-learn's inverse penalty strength; C=inf is the unpenalised mnl. C comes from
+    tune.tune_ridge. Use with the mnl encoders."""
+
+    def __init__(self, C=1.0):
+        self.C = C
+
+    def fit(self, X, y, sample_weight=None):
+        self.scaler_ = StandardScaler().fit(X, sample_weight=sample_weight)
+        self.logit_ = LogisticRegression(C=self.C, max_iter=10_000, tol=1e-8).fit(
+            self.scaler_.transform(X), y, sample_weight=sample_weight)
+        self.classes_ = self.logit_.classes_
+        return self
+
+    def predict_proba(self, X):
+        return self.logit_.predict_proba(self.scaler_.transform(X))
 
 
 def gb(**params):
