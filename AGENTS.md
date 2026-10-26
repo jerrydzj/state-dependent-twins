@@ -50,3 +50,8 @@ Notebooks don't have to run on `main`. Every commit that changes a notebook leav
 commit's code and data, with its outputs saved, so `git log -1 -- <notebook>` is the commit where it runs. To rerun
 it, check out that commit in a worktree and start Python with `-S`, with the worktree's `src/` and the venv's
 `site-packages` on `PYTHONPATH`; otherwise the editable install imports `src/` from the main checkout.
+
+## Experiments
+
+Each run writes a new folder under `experiments/` at one commit, recorded in its `run.json`, and nothing changes the
+folder afterwards. Rescoring or refitting is a new run.
