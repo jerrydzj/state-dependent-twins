@@ -16,3 +16,6 @@ data/external/fred/MORTGAGE30US.csv
 
 # Per-respondent predictions are a derivative of the microdata
 experiments/**/predictions.parquet
+
+# Local secrets (FRED API key)
+.env
