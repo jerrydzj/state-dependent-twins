@@ -1,12 +1,16 @@
 """Turn the clean MVP table into features for each model family, as described in section 1 of
 notebooks/03_mvp_first_run.ipynb.
 
-Both encoders take the output of `clean.clean` and return one feature row per interview. Feature columns are fixed by
-the spec, never inferred from the data, so training and evaluation rows always line up.
+Each encoder takes the output of `clean.clean` and returns one feature row per interview. Feature columns are fixed by
+the spec, never inferred from the data, so training and evaluation rows always line up. The `*_state_features`
+encoders add the 10 state variables of `state.py` for each interview's survey month.
 """
+from functools import cache
+
 import pandas as pd
 
 from sdt.mvp.clean import INPUTS, ORDERED, UNORDERED
+from sdt.mvp.state import VARIABLES, build
 
 AGE_BINS, AGE_LABELS = [17, 34, 49, 64, 74, 97], ['18-34', '35-49', '50-64', '65-74', '75+']
 BUCKET = {  # ordered inputs bucketed for MNL: clean value -> level
@@ -71,3 +75,30 @@ def gb_features(df):
             out[c] = df[c].astype('int8')
     out['web'] = df['web'].astype('int8')
     return out
+
+
+PARTY_X_PRESIDENT = [(p, s) for s in ['pres_R', 'winner_R'] for p in ['Rep', 'Dem']]   # independents and NR: reference
+
+
+@cache
+def state_table(months):
+    return build(months).set_index('YYYYMM')[VARIABLES]
+
+
+def state_features(df):
+    """The state variables of each row's survey month, as floats."""
+    return state_table(tuple(sorted(df.YYYYMM.unique()))).loc[df.YYYYMM].set_index(df.index).astype(float)
+
+
+def mnl_state_features(df):
+    """mnl_features plus the state variables, linear, and respondent party x each president variable."""
+    S = state_features(df)
+    X = pd.concat([mnl_features(df), S], axis=1)
+    for p, s in PARTY_X_PRESIDENT:
+        X[f'POLAFF={p}:{s}'] = X[f'POLAFF={p}'] * S[s]
+    return X
+
+
+def gb_state_features(df):
+    """gb_features plus the state variables; trees find their own interactions."""
+    return pd.concat([gb_features(df), state_features(df)], axis=1)

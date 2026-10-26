@@ -1,6 +1,6 @@
 """Run the MVP supervised models on one feature set and save the results to experiments/mvp/<name>/.
 
-    python -m sdt.mvp.run demographics
+    python -m sdt.mvp.run demographics      # or: state
 
 Tunes gradient boosting, fits the baseline shares, multinomial logit and gradient boosting per item on the training
 window, predicts the evaluation window and scores both levels. Writes:
@@ -24,14 +24,15 @@ import pandas as pd
 
 from sdt.mvp import tune as tuning
 from sdt.mvp.clean import OUT_PATH, OUTCOMES
-from sdt.mvp.encode import gb_features, mnl_features
+from sdt.mvp.encode import gb_features, gb_state_features, mnl_features, mnl_state_features
 from sdt.mvp.models import BaselineShares, gb, mnl
 from sdt.mvp.score import benchmarks, bootstrap, fit_predict, score_predictions, skill
 from sdt.mvp.windows import split
 from sdt.paths import RAW_CSV, ROOT
 
 EXPERIMENTS = ROOT / 'experiments' / 'mvp'
-FEATURE_SETS = {'demographics': {'mnl': mnl_features, 'gb': gb_features}}   # name: encoder per model family
+FEATURE_SETS = {'demographics': {'mnl': mnl_features, 'gb': gb_features},   # name: encoder per model family
+                'state': {'mnl': mnl_state_features, 'gb': gb_state_features}}
 
 
 def git(*args):
@@ -67,7 +68,7 @@ def run(name):
 
     settings = {}
     for item in OUTCOMES:
-        best, curves = tuning.tune(train, item)
+        best, curves = tuning.tune(train, item, encoders['gb'])
         grid = curves.min(axis=1).rename('val_log_loss').to_frame().assign(best_trees=curves.idxmin(axis=1))
         settings[item] = {'chosen': best, 'grid': grid.reset_index().to_dict('records')}
         print(item, best, f'{time.time() - start:.0f}s', flush=True)

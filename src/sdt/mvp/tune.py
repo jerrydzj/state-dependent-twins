@@ -45,12 +45,12 @@ def staged_loss(model, X, y, w):
                      for P in model.staged_predict_proba(X)])
 
 
-def tune(train, item, grid=GRID, max_trees=MAX_TREES):
+def tune(train, item, encode=gb_features, grid=GRID, max_trees=MAX_TREES):
     """Return the best setting (including max_iter) and the fold-averaged validation curves, one row per setting."""
     curves = np.zeros((len(grid), max_trees))
     for fit, val in folds(train):
-        X, y, w = item_data(fit, item, gb_features)
-        Xv, yv, wv = item_data(val, item, gb_features)
+        X, y, w = item_data(fit, item, encode)
+        Xv, yv, wv = item_data(val, item, encode)
         for i, params in enumerate(grid):
             model = gb(max_iter=max_trees, **params).fit(X, y, sample_weight=w)
             curves[i] += staged_loss(model, Xv, yv, wv) / N_FOLDS
