@@ -30,7 +30,9 @@ YEAR = pd.DateOffset(years=1)
 PRESIDENT = [('2017-01-20', 'R'), ('2021-01-20', 'D'), ('2025-01-20', 'R')]
 WINNER = [('2016-11-09', 'R'), ('2020-11-07', 'D'), ('2024-11-06', 'R')]
 
-VARIABLES = ['cpi', 'cpi_d1y', 'unrate', 'unrate_d1y', 'gdp', 'gdp_d1y', 'effr', 'effr_d1y', 'pres_R', 'winner_R']
+MACRO = ['cpi', 'cpi_d1y', 'unrate', 'unrate_d1y', 'gdp', 'gdp_d1y', 'effr', 'effr_d1y']
+POLITICS = ['pres_R', 'winner_R']
+VARIABLES = MACRO + POLITICS
 
 
 def round_half_up(x, digits):

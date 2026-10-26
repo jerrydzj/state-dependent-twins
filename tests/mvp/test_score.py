@@ -149,9 +149,9 @@ def test_score_cell_differences_follow_pairs():
                        'PAGO': rng.choice(['fav', 'mid', 'unf'], n)})
     P = lambda: rng.dirichlet([1, 1, 1], n)
     pred = pd.concat([pd.DataFrame(P(), columns=['fav', 'mid', 'unf']).assign(item='PAGO', CASEID=range(n), model=m)
-                      for m in ['baseline', 'mnl_demographics', 'mnl_demographics_state']], ignore_index=True)
-    out = score_cell(pred, df, pairs=[('mnl_demographics_state', 'mnl_demographics'), ('gb_x', 'gb_y')]).set_index('model')
-    assert 'mnl_demographics_state-mnl_demographics' in out.index and 'gb_x-gb_y' not in out.index   # absent pairs skipped
-    d = out.loc['mnl_demographics_state-mnl_demographics']
-    assert d.log_loss == pytest.approx(out.loc['mnl_demographics_state', 'log_loss'] - out.loc['mnl_demographics', 'log_loss'])
+                      for m in ['baseline', 'mnl_demographics', 'mnl_demographics_macro_politics']], ignore_index=True)
+    out = score_cell(pred, df, pairs=[('mnl_demographics_macro_politics', 'mnl_demographics'), ('gb_x', 'gb_y')]).set_index('model')
+    assert 'mnl_demographics_macro_politics-mnl_demographics' in out.index and 'gb_x-gb_y' not in out.index   # absent pairs skipped
+    d = out.loc['mnl_demographics_macro_politics-mnl_demographics']
+    assert d.log_loss == pytest.approx(out.loc['mnl_demographics_macro_politics', 'log_loss'] - out.loc['mnl_demographics', 'log_loss'])
     assert d.log_loss_lo <= d.log_loss <= d.log_loss_hi

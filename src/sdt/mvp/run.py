@@ -1,11 +1,11 @@
 """Run the MVP supervised models on every feature set and save the results to a new folder
 experiments/mvp/<date>-<description>/, where the description says what the run contains.
 
-    python -m sdt.mvp.run supervised-demographics-state
+    python -m sdt.mvp.run supervised-macro-politics-ridge
 
 For each feature set, tunes gradient boosting, then fits the multinomial logit and gradient boosting per item on the
 training window; the baseline shares are fitted once. Models are named <family>_<feature set>, e.g.
-`mnl_demographics_state`. Predicts the evaluation window and scores both levels. Writes:
+`mnl_demographics_macro_politics`. Predicts the evaluation window and scores both levels. Writes:
 
 - scores.csv: log loss and Wasserstein distance per evaluation cell (period x party group, see score.cells), model and
   item, with skill against the baseline shares and 95% bootstrap intervals (`_lo`, `_hi`); a row per pair in PAIRS
@@ -27,18 +27,19 @@ import pandas as pd
 
 from sdt.mvp import tune as tuning
 from sdt.mvp.clean import OUT_PATH, OUTCOMES
-from sdt.mvp.encode import gb_demographics_state_features, gb_features, mnl_demographics_state_features, mnl_features
+from sdt.mvp import encode
 from sdt.mvp.models import BaselineShares, gb, mnl
 from sdt.mvp.score import benchmarks, bootstrap, cells, fit_predict, score_predictions, skill
 from sdt.mvp.windows import split
 from sdt.paths import RAW_CSV, ROOT
 
 EXPERIMENTS = ROOT / 'experiments' / 'mvp'
-FEATURE_SETS = {'demographics': {'mnl': mnl_features, 'gb': gb_features},   # name: encoder per model family
-                'demographics_state': {'mnl': mnl_demographics_state_features, 'gb': gb_demographics_state_features}}
-# Differences a - b with paired intervals: MNL vs GB within each feature set, and what the state adds to each family
+FEATURE_SETS = {'demographics': {'mnl': encode.mnl_features, 'gb': encode.gb_features}} | {   # encoder per family
+    fs: {'mnl': getattr(encode, f'mnl_{fs}_features'), 'gb': getattr(encode, f'gb_{fs}_features')}
+    for fs in ['demographics_macro', 'demographics_politics', 'demographics_macro_politics']}
+# Differences a - b with paired intervals: MNL vs GB within each feature set, and what each set adds to demographics
 PAIRS = ([(f'mnl_{fs}', f'gb_{fs}') for fs in FEATURE_SETS]
-         + [(f'{family}_demographics_state', f'{family}_demographics') for family in ('mnl', 'gb')])
+         + [(f'{family}_{fs}', f'{family}_demographics') for fs in list(FEATURE_SETS)[1:] for family in ('mnl', 'gb')])
 
 
 def git(*args):
@@ -88,7 +89,7 @@ def run(description):
     df = pd.read_parquet(OUT_PATH)
     train, _ = split(df)
 
-    settings, models = {}, {'baseline': (BaselineShares(), mnl_features)}
+    settings, models = {}, {'baseline': (BaselineShares(), encode.mnl_features)}
     for fs, enc in FEATURE_SETS.items():
         settings[fs] = {}
         for item in OUTCOMES:

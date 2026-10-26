@@ -3,15 +3,16 @@ notebooks/03_mvp_first_run.ipynb.
 
 Each encoder takes the output of `clean.clean` and returns one feature row per interview. Feature columns are fixed by
 the spec, never inferred from the data, so training and evaluation rows always line up. The demographics encoders
-(`mnl_features`, `gb_features`) use the respondent attributes; the demographics + state encoders
-(`*_demographics_state_features`) add the 10 state variables of `state.py` for each interview's survey month.
+(`mnl_features`, `gb_features`) use the respondent attributes. The others add state variables of `state.py` for each
+interview's survey month: the 8 macro variables (`*_demographics_macro_features`), the 2 president variables
+(`*_demographics_politics_features`), or all 10 (`*_demographics_macro_politics_features`).
 """
 from functools import cache
 
 import pandas as pd
 
 from sdt.mvp.clean import INPUTS, ORDERED, UNORDERED
-from sdt.mvp.state import VARIABLES, build
+from sdt.mvp.state import MACRO, POLITICS, VARIABLES, build
 
 AGE_BINS, AGE_LABELS = [17, 34, 49, 64, 74, 97], ['18-34', '35-49', '50-64', '65-74', '75+']
 BUCKET = {  # ordered inputs bucketed for MNL: clean value -> level
@@ -91,15 +92,41 @@ def state_features(df):
     return state_table(tuple(sorted(df.YYYYMM.unique()))).loc[df.YYYYMM].set_index(df.index).astype(float)
 
 
-def mnl_demographics_state_features(df):
-    """mnl_features plus the state variables, linear, and respondent party x each president variable."""
+def mnl_with_state(df, columns):
+    """mnl_features plus the given state variables, linear, and respondent party x each president variable if the
+    president variables are included."""
     S = state_features(df)
-    X = pd.concat([mnl_features(df), S], axis=1)
-    for p, s in PARTY_X_PRESIDENT:
-        X[f'POLAFF={p}:{s}'] = X[f'POLAFF={p}'] * S[s]
+    X = pd.concat([mnl_features(df), S[columns]], axis=1)
+    if set(POLITICS) <= set(columns):
+        for p, s in PARTY_X_PRESIDENT:
+            X[f'POLAFF={p}:{s}'] = X[f'POLAFF={p}'] * S[s]
     return X
 
 
-def gb_demographics_state_features(df):
-    """gb_features plus the state variables; trees find their own interactions."""
-    return pd.concat([gb_features(df), state_features(df)], axis=1)
+def gb_with_state(df, columns):
+    """gb_features plus the given state variables; trees find their own interactions."""
+    return pd.concat([gb_features(df), state_features(df)[columns]], axis=1)
+
+
+def mnl_demographics_macro_features(df):
+    return mnl_with_state(df, MACRO)
+
+
+def mnl_demographics_politics_features(df):
+    return mnl_with_state(df, POLITICS)
+
+
+def mnl_demographics_macro_politics_features(df):
+    return mnl_with_state(df, VARIABLES)
+
+
+def gb_demographics_macro_features(df):
+    return gb_with_state(df, MACRO)
+
+
+def gb_demographics_politics_features(df):
+    return gb_with_state(df, POLITICS)
+
+
+def gb_demographics_macro_politics_features(df):
+    return gb_with_state(df, VARIABLES)
