@@ -120,12 +120,15 @@ def test_cells_partition_the_evaluation_window():
     assert sum(len(out['all', g]) for g in GROUPS) == out['all', 'all'].POLAFF.notna().sum()   # non-reporters: 'all' only
 
 
-@pytest.mark.skipif(not (ROOT / 'experiments/mvp/demographics/predictions.parquet').exists() or not OUT_PATH.exists(),
+FIRST_RUN = ROOT / 'experiments' / 'mvp' / '2026-10-22-supervised-demographics'
+
+
+@pytest.mark.skipif(not (FIRST_RUN / 'predictions.parquet').exists() or not OUT_PATH.exists(),
                     reason='predictions or clean table not built')
 def test_all_cell_reproduces_first_run_scores():
     # The 'all'/'all' cell must equal the scores reported in notebook 03, which predate the cells
     from sdt.mvp.run import score_cell
-    run = ROOT / 'experiments' / 'mvp' / 'demographics'
+    run = FIRST_RUN
     df = pd.read_parquet(OUT_PATH)
     _, _, d = next(cells(df))
     pred = pd.read_parquet(run / 'predictions.parquet')

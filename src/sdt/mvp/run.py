@@ -1,6 +1,7 @@
-"""Run the MVP supervised models on every feature set and save the results to a new folder experiments/mvp/<name>/.
+"""Run the MVP supervised models on every feature set and save the results to a new folder
+experiments/mvp/<date>-<description>/, where the description says what the run contains.
 
-    python -m sdt.mvp.run supervised
+    python -m sdt.mvp.run supervised-demographics-state
 
 For each feature set, tunes gradient boosting, then fits the multinomial logit and gradient boosting per item on the
 training window; the baseline shares are fitted once. Models are named <family>_<feature set>, e.g.
@@ -77,10 +78,11 @@ def require_clean_tree():
         raise RuntimeError('commit your changes first: outputs must trace back to a commit')
 
 
-def run(name):
-    """Fit, predict and score every feature set into experiments/mvp/<name>/, which must not exist yet."""
+def run(description):
+    """Fit, predict and score every feature set into experiments/mvp/<today>-<description>/, which must not exist."""
     start = time.time()
     require_clean_tree()
+    name = f"{time.strftime('%Y-%m-%d')}-{description}"
     out = EXPERIMENTS / name
     out.mkdir(parents=True)                             # a run never writes into an earlier run's folder
     df = pd.read_parquet(OUT_PATH)
