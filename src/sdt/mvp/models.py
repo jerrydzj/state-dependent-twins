@@ -11,7 +11,7 @@ from sdt.mvp.clean import CLASSES
 def mnl():
     """Multinomial logit by unpenalised, weighted maximum likelihood (C=inf turns the L2 penalty off). Use with
     encode.mnl_features."""
-    return LogisticRegression(C=np.inf, max_iter=2000, tol=1e-8)
+    return LogisticRegression(C=np.inf, max_iter=10_000, tol=1e-8)     # state fits need up to ~5,000 iterations
 
 
 def gb(**params):
