@@ -4,8 +4,8 @@ import pytest
 from sklearn.ensemble import HistGradientBoostingClassifier
 
 from sdt.mvp.clean import clean, load_raw
-from sdt.mvp.encode import (MNL_LEVELS, NEVER_MISSING, PARTY_X_PRESIDENT, gb_features, gb_state_features,
-                             mnl_features, mnl_state_features)
+from sdt.mvp.encode import (MNL_LEVELS, NEVER_MISSING, PARTY_X_PRESIDENT, gb_demographics_state_features, gb_features,
+                             mnl_demographics_state_features, mnl_features)
 from sdt.mvp.state import VARIABLES
 from sdt.mvp.windows import split
 from sdt.paths import RAW_CSV
@@ -56,15 +56,15 @@ def test_real_data_fits():
     HistGradientBoostingClassifier(max_iter=5).fit(Xg[has_y], df.PAGO[has_y])  # accepts NaN inputs and categoricals
 
 
-def test_state_features_join_by_month():
+def test_demographics_state_features_join_by_month():
     df = rows({'YYYYMM': 202412, 'POLAFF': 1}, {'YYYYMM': 202502, 'POLAFF': 2}, {'YYYYMM': 202502, 'POLAFF': 3})
-    X = mnl_state_features(df)
+    X = mnl_demographics_state_features(df)
     assert X.columns.tolist() == mnl_features(df).columns.tolist() + VARIABLES + [f'POLAFF={p}:{s}' for p, s in PARTY_X_PRESIDENT]
     assert X.notna().all(axis=None) and (X.dtypes == float).all()
     assert X[['pres_R', 'winner_R', 'effr']].values.tolist() == [[0, 1, 4.58], [1, 1, 4.33], [1, 1, 4.33]]
     # Rep in a Democratic presidency won by a Republican; Dem and Ind under a Republican president
     assert X.filter(like=':').values.tolist() == [[0, 0, 1, 0], [0, 1, 0, 1], [0, 0, 0, 0]]
-    G = gb_state_features(df)
+    G = gb_demographics_state_features(df)
     assert G.columns.tolist() == gb_features(df).columns.tolist() + VARIABLES
     assert (G[VARIABLES].values == X[VARIABLES].values).all()
 
@@ -74,5 +74,5 @@ def test_real_data_state_design_has_full_rank():
     # The logit is unpenalised, so every column must be identified from the training rows of every item
     train, _ = split(clean(load_raw()))
     for item in ['PAGO', 'PEXP', 'BUS12', 'BUS5', 'DUR']:
-        X = mnl_state_features(train[train[item].notna()])
+        X = mnl_demographics_state_features(train[train[item].notna()])
         assert np.linalg.matrix_rank(np.column_stack([np.ones(len(X)), X.values])) == X.shape[1] + 1, item

@@ -2,8 +2,9 @@
 notebooks/03_mvp_first_run.ipynb.
 
 Each encoder takes the output of `clean.clean` and returns one feature row per interview. Feature columns are fixed by
-the spec, never inferred from the data, so training and evaluation rows always line up. The `*_state_features`
-encoders add the 10 state variables of `state.py` for each interview's survey month.
+the spec, never inferred from the data, so training and evaluation rows always line up. The demographics encoders
+(`mnl_features`, `gb_features`) use the respondent attributes; the demographics + state encoders
+(`*_demographics_state_features`) add the 10 state variables of `state.py` for each interview's survey month.
 """
 from functools import cache
 
@@ -90,7 +91,7 @@ def state_features(df):
     return state_table(tuple(sorted(df.YYYYMM.unique()))).loc[df.YYYYMM].set_index(df.index).astype(float)
 
 
-def mnl_state_features(df):
+def mnl_demographics_state_features(df):
     """mnl_features plus the state variables, linear, and respondent party x each president variable."""
     S = state_features(df)
     X = pd.concat([mnl_features(df), S], axis=1)
@@ -99,6 +100,6 @@ def mnl_state_features(df):
     return X
 
 
-def gb_state_features(df):
+def gb_demographics_state_features(df):
     """gb_features plus the state variables; trees find their own interactions."""
     return pd.concat([gb_features(df), state_features(df)], axis=1)

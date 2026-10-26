@@ -1,6 +1,6 @@
 """Run the MVP supervised models on one feature set and save the results to experiments/mvp/<name>/.
 
-    python -m sdt.mvp.run demographics              # or: state
+    python -m sdt.mvp.run demographics              # or: demographics_state
     python -m sdt.mvp.run --rescore demographics    # rebuild scores.csv from saved predictions
 
 Tunes gradient boosting, fits the baseline shares, multinomial logit and gradient boosting per item on the training
@@ -25,7 +25,7 @@ import pandas as pd
 
 from sdt.mvp import tune as tuning
 from sdt.mvp.clean import OUT_PATH, OUTCOMES
-from sdt.mvp.encode import gb_features, gb_state_features, mnl_features, mnl_state_features
+from sdt.mvp.encode import gb_demographics_state_features, gb_features, mnl_demographics_state_features, mnl_features
 from sdt.mvp.models import BaselineShares, gb, mnl
 from sdt.mvp.score import benchmarks, bootstrap, cells, fit_predict, score_predictions, skill
 from sdt.mvp.windows import split
@@ -33,7 +33,7 @@ from sdt.paths import RAW_CSV, ROOT
 
 EXPERIMENTS = ROOT / 'experiments' / 'mvp'
 FEATURE_SETS = {'demographics': {'mnl': mnl_features, 'gb': gb_features},   # name: encoder per model family
-                'state': {'mnl': mnl_state_features, 'gb': gb_state_features}}
+                'demographics_state': {'mnl': mnl_demographics_state_features, 'gb': gb_demographics_state_features}}
 
 
 def git(*args):
