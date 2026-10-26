@@ -129,10 +129,26 @@ def test_all_cell_reproduces_first_run_scores():
     df = pd.read_parquet(OUT_PATH)
     _, _, d = next(cells(df))
     pred = pd.read_parquet(run / 'predictions.parquet')
-    new = score_cell(pred[pred.CASEID.isin(d.CASEID)], d)
+    new = score_cell(pred[pred.CASEID.isin(d.CASEID)], d, pairs=[('mnl', 'gb')])
     old = pd.read_csv(run / 'scores.csv')
     if 'period' in old:
         old = old[(old.period == 'all') & (old.group == 'all')].drop(columns=['period', 'group'])
     key = ['item', 'model']
     pd.testing.assert_frame_equal(new.round(6).set_index(key).sort_index(), old.set_index(key).sort_index()[new.columns.drop(key)],
                                   check_exact=False, atol=1e-6, rtol=0)
+
+
+def test_score_cell_differences_follow_pairs():
+    from sdt.mvp.run import score_cell
+    rng = np.random.default_rng(0)
+    n = 300
+    df = pd.DataFrame({'CASEID': range(n), 'YYYYMM': rng.choice([202408, 202409], n), 'WT': rng.uniform(0.5, 1.5, n),
+                       'PAGO': rng.choice(['fav', 'mid', 'unf'], n)})
+    P = lambda: rng.dirichlet([1, 1, 1], n)
+    pred = pd.concat([pd.DataFrame(P(), columns=['fav', 'mid', 'unf']).assign(item='PAGO', CASEID=range(n), model=m)
+                      for m in ['baseline', 'mnl_demographics', 'mnl_demographics_state']], ignore_index=True)
+    out = score_cell(pred, df, pairs=[('mnl_demographics_state', 'mnl_demographics'), ('gb_x', 'gb_y')]).set_index('model')
+    assert 'mnl_demographics_state-mnl_demographics' in out.index and 'gb_x-gb_y' not in out.index   # absent pairs skipped
+    d = out.loc['mnl_demographics_state-mnl_demographics']
+    assert d.log_loss == pytest.approx(out.loc['mnl_demographics_state', 'log_loss'] - out.loc['mnl_demographics', 'log_loss'])
+    assert d.log_loss_lo <= d.log_loss <= d.log_loss_hi
