@@ -5,10 +5,11 @@ import pytest
 from sdt.mvp.clean import clean, load_raw
 from sdt.mvp.encode import mnl_features
 from sdt.mvp.models import BaselineShares, mnl
-from sdt.mvp.score import (bootstrap, distribution_score, evaluate, log_loss, noise_floor, predict, score_predictions, skill,
-                           wasserstein)
+from sdt.mvp.score import (GROUPS, PERIODS, bootstrap, cells, distribution_score, evaluate, log_loss, noise_floor, predict,
+                           score_predictions, skill, wasserstein)
 from sdt.mvp.windows import EVAL_START, HORIZON, TRAIN_END, split
-from sdt.paths import DATA, RAW_CSV
+from sdt.mvp.clean import OUT_PATH
+from sdt.paths import DATA, RAW_CSV, ROOT
 
 
 def test_log_loss_by_hand():
@@ -104,3 +105,34 @@ def test_bootstrap_is_paired():
     for s in ['log_loss', 'wasserstein']:
         assert ci.loc['mnl', f'{s}_lo'] <= point[s] <= ci.loc['mnl', f'{s}_hi']
     assert ci.loc['mnl-gb', 'log_loss_hi'] < 0                                              # mnl's loss is lower
+
+
+def test_cells_partition_the_evaluation_window():
+    months = [202407, 202408, 202410, 202411, 202501, 202502, 202602]
+    df = pd.DataFrame({'CASEID': range(14), 'YYYYMM': months * 2,
+                       'POLAFF': pd.Categorical(['Rep', 'Dem', 'Ind', None, 'Rep', 'Dem', 'Ind'] * 2)})
+    out = {(p, g): d for p, g, d in cells(df)}
+    assert list(out) == [(p, g) for p in ['all', *PERIODS] for g in ['all', *GROUPS]]
+    assert set(out['all', 'all'].YYYYMM) == set(months) - {202407}                    # evaluation window only
+    assert {p: sorted(set(out[p, 'all'].YYYYMM)) for p in PERIODS} == {
+        'Baseline': [202408, 202410], 'Flip': [202411, 202501], 'Tariffs': [202502, 202602]}
+    assert sum(len(out[p, 'all']) for p in PERIODS) == len(out['all', 'all'])          # periods don't overlap
+    assert sum(len(out['all', g]) for g in GROUPS) == out['all', 'all'].POLAFF.notna().sum()   # non-reporters: 'all' only
+
+
+@pytest.mark.skipif(not (ROOT / 'experiments/mvp/demographics/predictions.parquet').exists() or not OUT_PATH.exists(),
+                    reason='predictions or clean table not built')
+def test_all_cell_reproduces_first_run_scores():
+    # The 'all'/'all' cell must equal the scores reported in notebook 03, which predate the cells
+    from sdt.mvp.run import score_cell
+    run = ROOT / 'experiments' / 'mvp' / 'demographics'
+    df = pd.read_parquet(OUT_PATH)
+    _, _, d = next(cells(df))
+    pred = pd.read_parquet(run / 'predictions.parquet')
+    new = score_cell(pred[pred.CASEID.isin(d.CASEID)], d)
+    old = pd.read_csv(run / 'scores.csv')
+    if 'period' in old:
+        old = old[(old.period == 'all') & (old.group == 'all')].drop(columns=['period', 'group'])
+    key = ['item', 'model']
+    pd.testing.assert_frame_equal(new.round(6).set_index(key).sort_index(), old.set_index(key).sort_index()[new.columns.drop(key)],
+                                  check_exact=False, atol=1e-6, rtol=0)

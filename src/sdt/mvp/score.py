@@ -5,14 +5,19 @@
   months (as in Kolluri et al. 2025, with months in place of experimental conditions).
 
 Both are compared with the baseline shares through `skill`, and with a uniform guess and a bootstrap noise floor
-through `benchmarks`. `bootstrap` gives 95% intervals for every score, skill and model difference.
+through `benchmarks`. `bootstrap` gives 95% intervals for every score, skill and model difference. `cells` splits the
+evaluation window by period and party, so every score can be reported for each.
 """
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
 
 from sdt.mvp.clean import CLASSES, OUTCOMES
-from sdt.mvp.windows import split
+from sdt.mvp.windows import EVAL_START, split
+
+# Evaluation periods by first survey month; each starts with the first interview window that contains its event
+PERIODS = {'Baseline': EVAL_START, 'Flip': 202411, 'Tariffs': 202502}   # election 5 Nov 2024; tariff orders 1 Feb 2025
+GROUPS = ['Rep', 'Dem', 'Ind']                                           # POLAFF; non-reporters count only in 'all'
 
 
 def class_index(y):
@@ -174,3 +179,16 @@ def benchmarks(df, items=tuple(OUTCOMES), n_boot=200, seed=0):
                       'uniform_wasserstein': distribution_score(y, uniform, w, month),
                       'floor_wasserstein': noise_floor(y, w, month, n_boot, seed)}
     return pd.DataFrame(rows).T
+
+
+def cells(df):
+    """(period, group, rows) for every evaluation cell: 'all' and each period, crossed with 'all' and each party."""
+    _, test = split(df)
+    first = np.array(list(PERIODS.values()))
+    period = np.array(list(PERIODS))[np.searchsorted(first, test.YYYYMM.to_numpy(), side='right') - 1]
+    everyone = np.ones(len(test), bool)
+    by_period = {'all': everyone} | {p: period == p for p in PERIODS}
+    by_group = {'all': everyone} | {g: (test.POLAFF == g).to_numpy() for g in GROUPS}
+    for p, in_period in by_period.items():
+        for g, in_group in by_group.items():
+            yield p, g, test[in_period & in_group]
