@@ -43,3 +43,10 @@ fix!: separate sitting president from election winner
 
 C1 log-loss skill for GOVT goes from below zero to +0.16.
 ```
+
+## Notebooks
+
+Notebooks don't have to run on `main`. Every commit that changes a notebook leaves it running top to bottom on that
+commit's code and data, with its outputs saved, so `git log -1 -- <notebook>` is the commit where it runs. To rerun
+it, check out that commit in a worktree and start Python with `-S`, with the worktree's `src/` and the venv's
+`site-packages` on `PYTHONPATH`; otherwise the editable install imports `src/` from the main checkout.
