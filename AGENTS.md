@@ -51,6 +51,22 @@ commit's code and data, with its outputs saved, so `git log -1 -- <notebook>` is
 it, check out that commit in a worktree and start Python with `-S`, with the worktree's `src/` and the venv's
 `site-packages` on `PYTHONPATH`; otherwise the editable install imports `src/` from the main checkout.
 
+A notebook is read once, top to bottom, by someone who has not seen the work. 03's tuning paragraph (section 3.2) and
+04's first results paragraph (section 5.1) are models. Write by these rules:
+
+- **Parallel ideas, parallel form.** Give each concept one name, never a synonym for variety. Give parallel parts one
+  structure, such as "On the individual score, … On the distributional score, …".
+- **One idea per paragraph, without exception.** Every sentence develops that idea, so a sentence about anything else
+  moves to the paragraph it belongs to or is cut.
+- **Choose each conjunction for its logic.** "And" only adds, whereas "so", "because", "but", "although" and "if" say
+  how ideas relate. Never join contrasting or unrelated clauses with "and" or "while".
+- **In results, interpret the figure; don't recite it.** Say what the patterns mean for the question instead of listing
+  cell values, which the reader can read off the figure. Everywhere else, give exact numbers.
+- **Describe a process as precise, ordered steps.** Each step says what is done, to what and with which numbers, in the
+  order it happens, instead of compressing several into one claim ("noise can only increase a distance").
+- **Write like a person, not a model.** Make the actor the subject and the action the verb. Cut any phrase that carries
+  no information, such as an abstract label for something concrete ("Two views show both scores"), a hedge or filler.
+
 ## Experiments
 
 Each run writes a new folder `experiments/<stage>/<YYYY-MM-DD>-<description>/` at one commit, recorded in its
