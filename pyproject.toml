@@ -18,6 +18,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+twin = [
+    "torch==2.14.1",
+    "transformers==5.20.2",
+]
 dev = [
     "ipykernel==7.4.0",
     "jupyterlab==4.6.4",
