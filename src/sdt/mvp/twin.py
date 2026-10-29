@@ -20,10 +20,16 @@ The weights are released in bf16 and computed with in fp32. Converting bf16 to f
 released ones. bf16 arithmetic keeps about 3 significant digits, and its rounding depends on the shape of the batch:
 with the Llama 3.2 1B model, the same prompt scored alone and in a batch differed by up to 0.03 in probability in
 bf16, and by 0.00001 in fp32.
+
+The intercept-shifted twin (`fit_shift`, `apply_shift`) moves the log of each class probability by a constant per
+class, b = (b_fav, 0, b_unf), and takes the softmax again: softmax(log p + b). The same b applies to every respondent,
+so the shift changes the twin's levels but not how its answers differ across respondents and states. b is fitted
+once per model, prompt, feature set and item, by weighted maximum likelihood on the training window's web interviews.
 """
 import numpy as np
 import pandas as pd
 import torch
+from scipy.optimize import minimize
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from sdt.mvp.clean import CLASSES
@@ -98,3 +104,36 @@ def answer_probs(tok, model, chats, item, mid_share=None, batch_size=16):
     p = next_token_probs(tok, model, [render(c) for c in chats], option_tokens(tok, len(OPTIONS[item])), batch_size)
     mass = p.sum(axis=1)
     return to_classes(p / mass[:, None], item, mid_share).assign(mass=mass).set_axis(chats.index)
+
+
+def _shifted(logp, b):
+    """softmax(logp + b) row by row, with b = (b_fav, 0, b_unf)."""
+    z = logp + np.array([b[0], 0.0, b[1]])
+    z -= z.max(axis=1, keepdims=True)
+    q = np.exp(z)
+    return q / q.sum(axis=1, keepdims=True)
+
+
+def fit_shift(p, y, w):
+    """The shift b = (b_fav, 0, b_unf) that maximises the weighted log-likelihood of answers `y` (class labels) under
+    softmax(log p + b), where `p` holds CLASSES probabilities. Returned as a Series indexed by CLASSES."""
+    logp = np.log(np.clip(np.asarray(p[CLASSES], float), 1e-12, None))   # clip: guard against log(0)
+    onehot = (np.asarray(y)[:, None] == np.array(CLASSES)).astype(float)
+    w = np.asarray(w, float) / np.sum(w)
+
+    def loss(b):
+        q = _shifted(logp, b)
+        nll = -(w * np.log((q * onehot).sum(axis=1))).sum()
+        grad = (w[:, None] * (q - onehot)).sum(axis=0)[[0, 2]]          # d nll / d (b_fav, b_unf)
+        return nll, grad
+
+    fit = minimize(loss, np.zeros(2), jac=True, method='L-BFGS-B', options={'gtol': 1e-10, 'ftol': 1e-15})
+    if not fit.success:
+        raise RuntimeError(f'intercept shift did not converge: {fit.message}')
+    return pd.Series([fit.x[0], 0.0, fit.x[1]], index=CLASSES)
+
+
+def apply_shift(p, b):
+    """softmax(log p + b) for a DataFrame `p` of CLASSES probabilities and a shift `b` from fit_shift."""
+    logp = np.log(np.clip(np.asarray(p[CLASSES], float), 1e-12, None))
+    return pd.DataFrame(_shifted(logp, b[['fav', 'unf']].to_numpy()), columns=CLASSES, index=p.index)

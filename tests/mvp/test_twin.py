@@ -73,3 +73,32 @@ def test_padding_does_not_change_probabilities(small):
     batched = answer_probs(*small, chats, 'BUS12', batch_size=2)
     assert np.allclose(alone.to_numpy(), batched.iloc[[1]].to_numpy(), atol=1e-3)
     assert np.allclose(batched[CLASSES].sum(axis=1), 1) and batched['mass'].between(0, 1).all()
+
+
+def synthetic(b_true, n=20_000, seed=0):
+    """Class probabilities p, answers drawn from softmax(log p + b_true), and survey-like weights."""
+    rng = np.random.default_rng(seed)
+    p = pd.DataFrame(rng.dirichlet([2, 2, 2], n), columns=CLASSES)
+    q = twin.apply_shift(p, pd.Series(b_true, index=CLASSES))
+    y = np.array(CLASSES)[(q.cumsum(axis=1).to_numpy() < rng.random(n)[:, None]).sum(axis=1)]
+    return p, y, rng.lognormal(0, 0.5, n)
+
+
+def test_fit_shift_recovers_a_known_shift():
+    p, y, w = synthetic([0.7, 0.0, -0.4])
+    b = twin.fit_shift(p, y, w)
+    assert b['mid'] == 0 and np.allclose(b[['fav', 'unf']], [0.7, -0.4], atol=0.06)
+
+
+def test_fit_shift_matches_weighted_answer_shares():
+    # At the maximum, the weighted mean shifted probability of each class equals its weighted share of answers
+    p, y, w = synthetic([0.0, 0.0, 0.0], seed=1)
+    q = twin.apply_shift(p, twin.fit_shift(p, y, w))
+    actual = [np.average(y == c, weights=w) for c in CLASSES]
+    assert np.allclose(np.average(q, axis=0, weights=w), actual, atol=1e-6)
+
+
+def test_zero_shift_leaves_probabilities_unchanged():
+    p = pd.DataFrame([[0.2, 0.5, 0.3], [0.594, 0.01, 0.396]], columns=CLASSES, index=[7, 9])
+    q = twin.apply_shift(p, pd.Series(0.0, index=CLASSES))
+    assert q.index.tolist() == [7, 9] and np.allclose(q, p)
