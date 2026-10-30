@@ -92,3 +92,26 @@ def test_real_data_prompts_carry_no_dates():
               'November', 'December']
     for item in OUTCOMES:
         assert not any(m in user_message(item) for m in months)
+
+
+# Proper names that could cue knowledge of a specific period: politicians, the survey, events, Fed chairs
+NAMES = ['Biden', 'Trump', 'Harris', 'Obama', 'Michigan', 'Surveys of Consumers', 'COVID', 'pandemic', 'tariff',
+         'Powell', 'Yellen']
+
+
+@pytest.mark.skipif(not RAW_CSV.exists(), reason='data/data.csv not downloaded')
+def test_real_data_prompts_carry_no_names():
+    train, _ = split(clean(load_raw()))
+    df = train[train.web == 1]
+    pattern = re.compile('|'.join(NAMES), re.IGNORECASE)
+    for item in OUTCOMES:
+        chats = messages(df, 'demographics_macro_politics', item)   # every other feature set's text is a subset
+        assert not any(pattern.search(m['content']) for chat in chats for m in chat)
+
+
+def test_scenario_changes_the_state_before_writing():
+    df = clean(pd.DataFrame([{**BASE, 'YYYYMM': 202407}]))
+    flip = lambda S: S.assign(pres_R=1, winner_R=1)
+    actual = messages(df, 'demographics_politics', 'BUS12').iloc[0][0]['content']
+    flipped = messages(df, 'demographics_politics', 'BUS12', scenario=flip).iloc[0][0]['content']
+    assert 'Party of the president: Democratic' in actual and 'Party of the president: Republican' in flipped

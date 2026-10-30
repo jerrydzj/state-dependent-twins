@@ -120,9 +120,13 @@ def user_message(item):
     return '\n'.join([question, ''] + [f'{k}. {text}' for k, (_, text) in enumerate(options, 1)] + ['', ANSWER])
 
 
-def messages(df, feature_set, item):
-    """One chat (system and user message) per interview of the clean table `df`, indexed like it."""
+def messages(df, feature_set, item, scenario=None):
+    """One chat (system and user message) per interview of the clean table `df`, indexed like it. `scenario`, if
+    given, is a function that changes the state table (one row per survey month) before the prompts are written: a
+    counterfactual."""
     S = encode.state_table(tuple(sorted(df.YYYYMM.unique())))
+    if scenario is not None:
+        S = scenario(S)
     user = user_message(item)
     return pd.Series([[{'role': 'system', 'content': system_message(row, S.loc[row['YYYYMM']], feature_set)},
                        {'role': 'user', 'content': user}] for _, row in df.iterrows()], index=df.index)
