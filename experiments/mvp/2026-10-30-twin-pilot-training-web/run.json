@@ -1,0 +1,61 @@
+{
+ "name": "2026-10-30-twin-pilot-training-web",
+ "commit": "68b6f479ffc9e9414b15fcc9089b03c8396378de",
+ "data_csv_sha256": "5e0a7e1cd2a04e8378e43bc1b4316b4bb5387241bb40744f0c50c6f7cd49ca22",
+ "date": "2026-10-30",
+ "runtime_seconds_last_session": 6181,
+ "python": "3.14.10",
+ "packages": {
+  "torch": "2.14.1",
+  "transformers": "5.20.2",
+  "numpy": "2.5.4",
+  "pandas": "3.0.6",
+  "scipy": "1.18.1"
+ },
+ "model": "meta-llama/Llama-3.1-8B-Instruct",
+ "revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+ "device": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+ "dtype": "fp32 (released bf16 weights converted exactly), except the bf16 stage",
+ "batch_size": 16,
+ "limit": null,
+ "interviews": {
+  "train-web": 2257
+ },
+ "stages": [
+  "base",
+  "counterfactual",
+  "rerun",
+  "bf16"
+ ],
+ "scenarios": [
+  "pres_R",
+  "cpi_9.1"
+ ],
+ "counterfactual_feature_set": "demographics_macro_politics",
+ "rerun": {
+  "per_cell": 10,
+  "seed": 0
+ },
+ "per_stage": {
+  "base": {
+   "prompts": 45140,
+   "seconds": 3857,
+   "prompts_per_second": 11.7
+  },
+  "bf16": {
+   "prompts": 200,
+   "seconds": 8,
+   "prompts_per_second": 25.71
+  },
+  "counterfactual": {
+   "prompts": 22570,
+   "seconds": 2293,
+   "prompts_per_second": 9.84
+  },
+  "rerun": {
+   "prompts": 200,
+   "seconds": 23,
+   "prompts_per_second": 8.73
+  }
+ }
+}
