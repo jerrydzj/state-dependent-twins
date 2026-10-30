@@ -34,11 +34,12 @@ interrupted run can continue where it stopped. When every chunk is done, the run
 - calibration_cv.csv: a check of calibration on months it was not fitted on. Each train-web month is held out in
   turn, the calibrations and the baseline shares are fitted on the other months, and the held-out month is scored;
   the log loss pools the held-out predictions of all months.
-- run.json: commit, data hash, model and revision, device, package versions, settings, and prompts and seconds per
-  stage.
+- run.json: commit, data hash, model and revision, device, package versions, settings, prompts and seconds per stage,
+  and the SHA-256 of option_probs.parquet, which is not in git.
 
 Everything after the raw probabilities is computed from option_probs.parquet without the model. `--from <run>` redoes
-it from an earlier run's option_probs.parquet into a new folder, without a GPU.
+it from an earlier run's option_probs.parquet into a new folder, without a GPU; the new run.json names the source run
+and records the SHA-256 of the file it read, so anyone holding the file can check that it is the same one.
 """
 import argparse
 import gc
@@ -250,7 +251,7 @@ def run(description, model_name=DEFAULT_MODEL, interviews=('train-web',), stages
     log['stage'] = log.chunk.str.split('--').str[0]
     per_stage = log.groupby('stage')[['prompts', 'seconds']].sum()
     json.dump({'name': name, 'commit': git('rev-parse', 'HEAD'),
-               'data_csv_sha256': hashlib.sha256(RAW_CSV.read_bytes()).hexdigest(),
+               'data_csv_sha256': sha256(RAW_CSV), 'option_probs_sha256': sha256(out / 'option_probs.parquet'),
                'date': time.strftime('%Y-%m-%d'), 'runtime_seconds_last_session': round(time.time() - start),
                'python': sys.version.split()[0],
                'packages': {p: version(p) for p in ['torch', 'transformers', 'numpy', 'pandas', 'scipy']},
@@ -265,6 +266,10 @@ def run(description, model_name=DEFAULT_MODEL, interviews=('train-web',), stages
     for p in (out / 'chunks').glob('*.parquet'):    # everything is in option_probs.parquet now
         p.unlink()
     print(json.dumps(json.load(open(out / 'run.json'))['per_stage'], indent=1))
+
+
+def sha256(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def write_postprocessed(out, raw, df):
@@ -283,13 +288,17 @@ def rescore(description, source, out_dir=EXPERIMENTS):
     out = out_dir / name
     out.mkdir(parents=True)
     src = json.load(open(out_dir / source / 'run.json'))
+    src_raw = out_dir / source / 'option_probs.parquet'
+    if src.get('option_probs_sha256', sha256(src_raw)) != sha256(src_raw):
+        raise RuntimeError(f'{src_raw} differs from the file its run wrote')
     df = pd.read_parquet(OUT_PATH)
-    write_postprocessed(out, pd.read_parquet(out_dir / source / 'option_probs.parquet'), df)
-    json.dump({'name': name, 'commit': git('rev-parse', 'HEAD'),
-               'data_csv_sha256': hashlib.sha256(RAW_CSV.read_bytes()).hexdigest(), 'date': time.strftime('%Y-%m-%d'),
+    write_postprocessed(out, pd.read_parquet(src_raw), df)
+    json.dump({'name': name, 'commit': git('rev-parse', 'HEAD'), 'data_csv_sha256': sha256(RAW_CSV),
+               'date': time.strftime('%Y-%m-%d'),
                'python': sys.version.split()[0],
                'packages': {p: version(p) for p in ['numpy', 'pandas', 'scipy']},
-               'source': {k: src[k] for k in ['name', 'commit', 'model', 'revision', 'device', 'interviews', 'stages']}},
+               'source': {**{k: src[k] for k in ['name', 'commit', 'model', 'revision', 'device', 'interviews', 'stages']},
+                          'option_probs_sha256': sha256(src_raw)}},
               open(out / 'run.json', 'w'), indent=1)
     print(pd.read_csv(out / 'calibration_cv.csv').pivot_table(index=['feature_set', 'item'], columns='model',
                                                              values='log_loss').round(3).to_string())

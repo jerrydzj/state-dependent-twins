@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -80,3 +82,20 @@ def test_calibration_cv_scores_every_model_on_held_out_months(clean_table):
     # the uncalibrated twin
     by = cv.pivot_table(index='item', columns='model', values='log_loss')
     assert (by.scale < by.twin).all() and (by.scale - by.baseline).abs().max() < 0.05
+
+
+def test_rescore_records_and_checks_the_source_file(tmp_path, clean_table):
+    d = interview_sets(clean_table, ['train-web'])['train-web'].groupby('YYYYMM').head(150)
+    source = tmp_path / 'source-run'
+    source.mkdir()
+    synthetic_raw({'train-web': d}).to_parquet(source / 'option_probs.parquet', index=False)
+    meta = {'name': 'source-run', 'commit': 'abc', 'model': 'm', 'revision': 'r', 'device': 'gpu',
+            'interviews': {'train-web': len(d)}, 'stages': ['base']}
+    json.dump(meta | {'option_probs_sha256': twin_run.sha256(source / 'option_probs.parquet')}, open(source / 'run.json', 'w'))
+    twin_run.rescore('check', 'source-run', out_dir=tmp_path)
+    (new,) = [p for p in tmp_path.iterdir() if p.name.endswith('-check')]
+    recorded = json.load(open(new / 'run.json'))['source']
+    assert recorded['name'] == 'source-run' and recorded['option_probs_sha256'] == twin_run.sha256(source / 'option_probs.parquet')
+    json.dump(meta | {'option_probs_sha256': '0' * 64}, open(source / 'run.json', 'w'))
+    with pytest.raises(RuntimeError, match='differs'):
+        twin_run.rescore('check-again', 'source-run', out_dir=tmp_path)
