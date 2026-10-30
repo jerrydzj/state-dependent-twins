@@ -3,6 +3,7 @@
     python -m sdt.mvp.twin_run twin-pilot-training-web --stages base,counterfactual,rerun,bf16 --batch-size 64
     python -m sdt.mvp.twin_run speed-test --benchmark       # prompts per second and GPU memory per batch size
     python -m sdt.mvp.twin_run <folder name> --resume ...   # continue an interrupted run at the same commit
+    python -m sdt.mvp.twin_run twin-pilot-calibration --from 2026-10-30-twin-pilot-training-web   # no GPU
 
 *Running* a prompt means the model computes its option probabilities; *scoring* compares probabilities with answers.
 Every interview of an interview set is run for every item, whether or not it answered the item, so no run depends on
@@ -36,7 +37,8 @@ interrupted run can continue where it stopped. When every chunk is done, the run
 - run.json: commit, data hash, model and revision, device, package versions, settings, and prompts and seconds per
   stage.
 
-Everything after the raw probabilities is computed from option_probs.parquet without the model.
+Everything after the raw probabilities is computed from option_probs.parquet without the model. `--from <run>` redoes
+it from an earlier run's option_probs.parquet into a new folder, without a GPU.
 """
 import argparse
 import gc
@@ -272,6 +274,27 @@ def write_postprocessed(out, raw, df):
     calibration_cv(raw, df).to_csv(out / 'calibration_cv.csv', index=False, float_format='%.6f')
 
 
+def rescore(description, source, out_dir=EXPERIMENTS):
+    """Redo everything after the raw probabilities from the earlier run `source` (a folder name in out_dir) into
+    out_dir/<today>-<description>/, without the model."""
+    if out_dir.resolve().is_relative_to(EXPERIMENTS.resolve()):
+        require_clean_tree()
+    name = f"{time.strftime('%Y-%m-%d')}-{description}"
+    out = out_dir / name
+    out.mkdir(parents=True)
+    src = json.load(open(out_dir / source / 'run.json'))
+    df = pd.read_parquet(OUT_PATH)
+    write_postprocessed(out, pd.read_parquet(out_dir / source / 'option_probs.parquet'), df)
+    json.dump({'name': name, 'commit': git('rev-parse', 'HEAD'),
+               'data_csv_sha256': hashlib.sha256(RAW_CSV.read_bytes()).hexdigest(), 'date': time.strftime('%Y-%m-%d'),
+               'python': sys.version.split()[0],
+               'packages': {p: version(p) for p in ['numpy', 'pandas', 'scipy']},
+               'source': {k: src[k] for k in ['name', 'commit', 'model', 'revision', 'device', 'interviews', 'stages']}},
+              open(out / 'run.json', 'w'), indent=1)
+    print(pd.read_csv(out / 'calibration_cv.csv').pivot_table(index=['feature_set', 'item'], columns='model',
+                                                             values='log_loss').round(3).to_string())
+
+
 def benchmark(model_name, sizes=(16, 32, 64, 128), n=512):
     """Prompts per second and peak GPU memory per batch size, on the longest prompts (demographics_macro_politics,
     BUS5). Nothing is saved."""
@@ -308,9 +331,12 @@ if __name__ == '__main__':
     parser.add_argument('--out', type=Path, default=EXPERIMENTS, help='parent folder of the run folder')
     parser.add_argument('--resume', action='store_true')
     parser.add_argument('--benchmark', action='store_true')
+    parser.add_argument('--from', dest='source', help='earlier run folder to redo the post-processing of, without a GPU')
     a = parser.parse_args()
     if a.benchmark:
         benchmark(a.model)
+    elif a.source:
+        rescore(a.description, a.source, a.out)
     else:
         interviews, stages = a.interviews.split(','), a.stages.split(',')
         if set(interviews) - set(INTERVIEW_SETS) or set(stages) - set(STAGES):
