@@ -7,7 +7,7 @@ import pytest
 from sdt.mvp import twin
 from sdt.mvp.clean import CLASSES, clean
 from sdt.mvp.prompts import messages
-from sdt.mvp.twin import MODELS, answer_probs, option_tokens, render, to_classes
+from sdt.mvp.twin import MODELS, RAW, class_probs, option_probs, option_tokens, render, to_classes
 from test_clean import BASE
 
 SMALL = 'meta-llama/Llama-3.2-1B-Instruct'
@@ -69,10 +69,18 @@ def test_padding_does_not_change_probabilities(small):
     # A short prompt scored alone and in a batch with a longer one, which pads it on the left
     df = clean(pd.DataFrame([BASE, {**BASE, 'AGE': float('nan'), 'SEX': float('nan'), 'MARRY': float('nan')}]))
     chats = messages(df, 'demographics', 'BUS12')
-    alone = answer_probs(*small, chats.iloc[[1]], 'BUS12')
-    batched = answer_probs(*small, chats, 'BUS12', batch_size=2)
+    alone = option_probs(*small, chats.iloc[[1]], 'BUS12')
+    batched = option_probs(*small, chats, 'BUS12', batch_size=2)
     assert np.allclose(alone.to_numpy(), batched.iloc[[1]].to_numpy(), atol=1e-3)
-    assert np.allclose(batched[CLASSES].sum(axis=1), 1) and batched['mass'].between(0, 1).all()
+    assert batched.index.equals(chats.index) and batched[RAW].sum(axis=1).between(0, 1).all()
+
+
+def test_class_probs_divide_by_the_mass():
+    raw = pd.DataFrame([[0.4, 0.2, 0.2], [0.5, 0.3, np.nan]], columns=RAW, index=[3, 5])
+    out = class_probs(raw.iloc[[0]], 'BUS12')
+    assert np.allclose(out.iloc[0].tolist(), [0.5, 0.25, 0.25, 0.8])
+    dur = class_probs(raw.iloc[[1]], 'DUR', mid_share=0.01)
+    assert dur.index.tolist() == [5] and np.allclose(dur.iloc[0].tolist(), [0.61875, 0.01, 0.37125, 0.8])
 
 
 def synthetic(b_true, n=20_000, seed=0):

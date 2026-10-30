@@ -45,6 +45,7 @@ MODELS = {
 # Llama 3 sets no padding token. Meta reserved this one for padding in fine-tuning; it never occurs in text, and the
 # attention mask hides it from every real token, so which token pads makes no difference to the probabilities.
 PAD = '<|finetune_right_pad_id|>'
+RAW = ['p1', 'p2', 'p3']           # raw probability of option number 1, 2 and 3
 
 
 def render(chat):
@@ -59,11 +60,12 @@ def device():
     return 'mps' if torch.backends.mps.is_available() else 'cpu'
 
 
-def load(name):
-    """Tokenizer and model at the pinned revision, with the released bf16 weights converted to fp32."""
+def load(name, dtype=torch.float32):
+    """Tokenizer and model at the pinned revision. The released bf16 weights are converted to fp32 unless `dtype` is
+    torch.bfloat16, which keeps them as released (used only to measure what fp32 changes)."""
     tok = AutoTokenizer.from_pretrained(name, revision=MODELS[name])
     tok.pad_token, tok.padding_side = PAD, 'left'
-    model = AutoModelForCausalLM.from_pretrained(name, revision=MODELS[name], dtype=torch.float32)
+    model = AutoModelForCausalLM.from_pretrained(name, revision=MODELS[name], dtype=dtype)
     return tok, model.to(device()).eval()
 
 
@@ -99,11 +101,20 @@ def to_classes(p, item, mid_share=None):
     return out[CLASSES]
 
 
-def answer_probs(tok, model, chats, item, mid_share=None, batch_size=16):
-    """Class probabilities and answer mass for each chat of `item` (a Series from prompts.messages), indexed like it."""
-    p = next_token_probs(tok, model, [render(c) for c in chats], option_tokens(tok, len(OPTIONS[item])), batch_size)
+def option_probs(tok, model, chats, item, batch_size=16):
+    """Run each chat of `item` (a Series from prompts.messages): the raw probability of each option number, before
+    dividing by the answer mass, in columns RAW (p3 is NaN for an item with two options). Indexed like `chats`."""
+    n = len(OPTIONS[item])
+    p = next_token_probs(tok, model, [render(c) for c in chats], option_tokens(tok, n), batch_size)
+    return pd.DataFrame(p, columns=RAW[:n], index=chats.index).reindex(columns=RAW)
+
+
+def class_probs(raw, item, mid_share=None):
+    """Raw option probabilities of `item` (columns RAW) -> CLASSES probabilities and the answer mass, indexed like
+    `raw`: divide by the mass (steps 4 and 5 of the module docstring)."""
+    p = raw[RAW[:len(OPTIONS[item])]].to_numpy(float)
     mass = p.sum(axis=1)
-    return to_classes(p / mass[:, None], item, mid_share).assign(mass=mass).set_axis(chats.index)
+    return to_classes(p / mass[:, None], item, mid_share).assign(mass=mass).set_axis(raw.index)
 
 
 def _shifted(logp, b):
@@ -119,6 +130,9 @@ def fit_shift(p, y, w):
     softmax(log p + b), where `p` holds CLASSES probabilities. Returned as a Series indexed by CLASSES."""
     logp = np.log(np.clip(np.asarray(p[CLASSES], float), 1e-12, None))   # clip: guard against log(0)
     onehot = (np.asarray(y)[:, None] == np.array(CLASSES)).astype(float)
+    missing = [c for c, n in zip(CLASSES, onehot.sum(axis=0)) if n == 0 and c != 'mid']
+    if missing:     # the likelihood then keeps rising as that class's b falls, so no finite b maximises it
+        raise ValueError(f'no answers in {missing}: the shift has no maximum')
     w = np.asarray(w, float) / np.sum(w)
 
     def loss(b):
@@ -127,7 +141,7 @@ def fit_shift(p, y, w):
         grad = (w[:, None] * (q - onehot)).sum(axis=0)[[0, 2]]          # d nll / d (b_fav, b_unf)
         return nll, grad
 
-    fit = minimize(loss, np.zeros(2), jac=True, method='L-BFGS-B', options={'gtol': 1e-10, 'ftol': 1e-15})
+    fit = minimize(loss, np.zeros(2), jac=True, method='L-BFGS-B', options={'gtol': 1e-8})
     if not fit.success:
         raise RuntimeError(f'intercept shift did not converge: {fit.message}')
     return pd.Series([fit.x[0], 0.0, fit.x[1]], index=CLASSES)
