@@ -7,7 +7,7 @@ from sdt.mvp.clean import CLASSES, OUT_PATH, OUTCOMES
 from sdt.mvp.encode import state_table
 from sdt.mvp.prompts import FEATURE_SETS
 from sdt.mvp.twin import RAW
-from sdt.mvp.twin_run import SCENARIOS, Runner, interview_sets, postprocess, rerun_sample
+from sdt.mvp.twin_run import SCENARIOS, Runner, calibration_cv, interview_sets, postprocess, rerun_sample
 
 TRAIN_WEB_MONTHS = (202404, 202405, 202406, 202407)
 
@@ -49,18 +49,34 @@ def test_runner_skips_chunks_on_disk(tmp_path, clean_table):
     runner.chunk('base', 'actual', 'train-web', 'demographics', 'PAGO', clean_table.head(2))
 
 
-def test_postprocess_keeps_answered_interviews_and_fits_shifts(clean_table):
-    sets = interview_sets(clean_table, ['train-web', 'eval'], limit=300)
-    rng = np.random.default_rng(0)
-    raw = pd.concat([pd.DataFrame(rng.dirichlet([1, 1, 1], len(d)) * 0.99, columns=RAW).assign(
+def synthetic_raw(sets, seed=0):
+    rng = np.random.default_rng(seed)
+    return pd.concat([pd.DataFrame(rng.dirichlet([1, 1, 1], len(d)) * 0.99, columns=RAW).assign(
         stage='base', scenario='actual', interviews=s, feature_set='demographics', item=item, CASEID=d.CASEID.to_numpy())
         for s, d in sets.items() for item in OUTCOMES], ignore_index=True)
-    pred, shifts = postprocess(raw, clean_table)
-    assert sorted(pred.model.unique()) == ['twin_demographics', 'twin_shift_demographics']
+
+
+def test_postprocess_keeps_answered_interviews_and_fits_calibrations(clean_table):
+    sets = interview_sets(clean_table, ['train-web', 'eval'], limit=300)
+    pred, calibration = postprocess(synthetic_raw(sets), clean_table)
+    assert sorted(pred.model.unique()) == ['twin_demographics', 'twin_scale_demographics', 'twin_shift_demographics']
     assert pred.columns.tolist() == ['item', 'CASEID'] + CLASSES + ['model'] and np.allclose(pred[CLASSES].sum(axis=1), 1)
     key = clean_table.set_index('CASEID')
     for item in OUTCOMES:
         ids = pred[(pred.item == item) & (pred.model == 'twin_demographics')].CASEID
         answered = pd.concat(sets.values()).pipe(lambda d: d[d[item].notna()]).CASEID
         assert sorted(ids) == sorted(answered) and key.loc[ids, item].notna().all()
-    assert set(shifts['shifts']['demographics']) == set(OUTCOMES) and 0 < shifts['dur_mid_share'] < 0.05
+    assert set(calibration['shift']['demographics']) == set(OUTCOMES) and 0 < calibration['dur_mid_share'] < 0.05
+    assert all(c['a'] == 1 for c in calibration['shift']['demographics'].values())
+
+
+def test_calibration_cv_scores_every_model_on_held_out_months(clean_table):
+    d = interview_sets(clean_table, ['train-web'])['train-web']
+    sample = d.groupby('YYYYMM').head(150)                                   # four months
+    cv = calibration_cv(synthetic_raw({'train-web': sample}), clean_table)
+    assert len(cv) == len(OUTCOMES) * 4 and set(cv.model) == {'baseline', 'twin', 'shift', 'scale'}
+    assert cv.log_loss.notna().all()
+    # random probabilities carry no information, so calibration should land near the baseline shares, far below
+    # the uncalibrated twin
+    by = cv.pivot_table(index='item', columns='model', values='log_loss')
+    assert (by.scale < by.twin).all() and (by.scale - by.baseline).abs().max() < 0.05

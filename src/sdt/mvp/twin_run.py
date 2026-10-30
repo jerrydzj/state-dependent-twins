@@ -8,8 +8,8 @@
 Every interview of an interview set is run for every item, whether or not it answered the item, so no run depends on
 an answer; interviews without an answer are left out only when scoring.
 
-Interview sets: `train-web`, the training window's web interviews (April to July 2024), on which the intercept shift
-is fitted, so every run includes it; and `eval`, the evaluation window.
+Interview sets: `train-web`, the training window's web interviews (April to July 2024), on which the twins are
+calibrated, so every run includes it; and `eval`, the evaluation window.
 
 Stages, in this order:
 
@@ -27,13 +27,16 @@ interrupted run can continue where it stopped. When every chunk is done, the run
 - option_probs.parquet: the raw probabilities `p1` to `p3` of every prompt run, with its stage, scenario, interview
   set, feature set, item and CASEID (not in git: a derivative of the microdata).
 - predictions.parquet: base-stage class probabilities of the interviews that answered each item, in the format of the
-  supervised runs, for `twin_<feature set>` (zero-shot) and `twin_shift_<feature set>` (intercept-shifted). Not in git.
-- shifts.json: the intercept shift per feature set and item, and DUR's middle share.
+  supervised runs, for three twins per feature set (twin.py): `twin_<feature set>` (zero-shot), `twin_shift_<feature
+  set>` (levels calibrated) and `twin_scale_<feature set>` (levels and scale calibrated). Not in git.
+- calibration.json: each calibrated twin's a and b per feature set and item, and DUR's middle share.
+- calibration_cv.csv: a check of calibration on months it was not fitted on. Each train-web month is held out in
+  turn, the calibrations and the baseline shares are fitted on the other months, and the held-out month is scored;
+  the log loss pools the held-out predictions of all months.
 - run.json: commit, data hash, model and revision, device, package versions, settings, and prompts and seconds per
   stage.
 
-Everything after the raw probabilities is computed from option_probs.parquet without the model, so changing it later
-is a new run that reads this one's file and needs no GPU.
+Everything after the raw probabilities is computed from option_probs.parquet without the model.
 """
 import argparse
 import gc
@@ -52,6 +55,7 @@ from sdt.mvp import twin
 from sdt.mvp.clean import CLASSES, OUT_PATH, OUTCOMES
 from sdt.mvp.prompts import FEATURE_SETS, messages
 from sdt.mvp.run import EXPERIMENTS, git, require_clean_tree
+from sdt.mvp.score import log_loss
 from sdt.mvp.windows import split
 from sdt.paths import RAW_CSV
 
@@ -151,22 +155,61 @@ def dur_mid_share(df):
     return float(np.average(d.DUR == 'mid', weights=d.WT))
 
 
+CALIBRATIONS = {'shift': False, 'scale': True}      # twin name -> whether the scale is fitted (twin.fit_calibration)
+
+
+def answered(raw, key, item):
+    """Rows of `raw` whose interview answered `item`."""
+    return raw[key.loc[raw.CASEID, item].notna().to_numpy()]
+
+
 def postprocess(raw, df):
-    """Base-stage predictions in the supervised format, and the intercept shifts, from the raw option probabilities."""
+    """Base-stage predictions of the three twins in the supervised format, and their calibrations, from the raw option
+    probabilities."""
     key = df.set_index('CASEID')
     mid_share = dur_mid_share(df)
-    preds, shifts = [], {}
+    preds, calibration = [], {}
     for (fs, item), g in raw[raw.stage == 'base'].groupby(['feature_set', 'item'], sort=False):
-        g = g[key.loc[g.CASEID, item].notna().to_numpy()]         # interviews that answered the item
+        g = answered(g, key, item)
         P = twin.class_probs(g, item, mid_share)
         fit = (g.interviews == 'train-web').to_numpy()
         a = key.loc[g.CASEID[fit]]
-        b = twin.fit_shift(P[fit], a[item].astype(str), a.WT)
-        shifts.setdefault(fs, {})[item] = {'fav': b['fav'], 'unf': b['unf']}
-        for name, Q in [(f'twin_{fs}', P), (f'twin_shift_{fs}', twin.apply_shift(P, b))]:
-            preds.append(Q[CLASSES].assign(item=item, CASEID=g.CASEID.to_numpy(), model=name))
+        twins = {f'twin_{fs}': P}
+        for name, scale in CALIBRATIONS.items():
+            c = twin.fit_calibration(P[fit], a[item].astype(str), a.WT, scale)
+            calibration.setdefault(name, {}).setdefault(fs, {})[item] = {'a': c['a'], 'fav': c['fav'], 'unf': c['unf']}
+            twins[f'twin_{name}_{fs}'] = twin.apply_calibration(P, c)
+        preds += [Q[CLASSES].assign(item=item, CASEID=g.CASEID.to_numpy(), model=m) for m, Q in twins.items()]
     pred = pd.concat(preds, ignore_index=True)[['item', 'CASEID'] + CLASSES + ['model']]
-    return pred, {'dur_mid_share': mid_share, 'shifts': shifts}
+    return pred, {'dur_mid_share': mid_share, **calibration}
+
+
+def calibration_cv(raw, df):
+    """Log loss of each twin and of the baseline shares on train-web months they were not fitted on: each month is held
+    out in turn and predicted from fits on the others (DUR's middle share included); one row per feature set, item and
+    model, pooling the held-out predictions of every month. Empty if train-web has fewer than two months."""
+    key = df.set_index('CASEID')
+    rows = []
+    for (fs, item), g in raw[(raw.stage == 'base') & (raw.interviews == 'train-web')].groupby(['feature_set', 'item'],
+                                                                                              sort=False):
+        g = answered(g, key, item)
+        a = key.loc[g.CASEID]
+        y, w, month = a[item].astype(str).to_numpy(), a.WT.to_numpy(), a.YYYYMM.to_numpy()
+        if len(np.unique(month)) < 2:
+            return pd.DataFrame()
+        held_out = {m: pd.DataFrame(index=g.index, columns=CLASSES, dtype=float) for m in ['baseline', 'twin', *CALIBRATIONS]}
+        for m in np.unique(month):
+            fit, test = month != m, month == m
+            shares = np.array([np.average(y[fit] == c, weights=w[fit]) for c in CLASSES])
+            P = twin.class_probs(g, item, shares[1])
+            held_out['baseline'].loc[test] = np.tile(shares, (test.sum(), 1))
+            held_out['twin'].loc[test] = P[test][CLASSES].to_numpy()
+            for name, scale in CALIBRATIONS.items():
+                c = twin.fit_calibration(P[fit], y[fit], w[fit], scale)
+                held_out[name].loc[test] = twin.apply_calibration(P[test], c)[CLASSES].to_numpy()
+        rows += [{'feature_set': fs, 'item': item, 'model': m, 'log_loss': log_loss(y, Q.to_numpy(float), w)}
+                 for m, Q in held_out.items()]
+    return pd.DataFrame(rows)
 
 
 def device_name():
@@ -176,7 +219,7 @@ def device_name():
 def run(description, model_name=DEFAULT_MODEL, interviews=('train-web',), stages=('base',), batch_size=16,
         limit=None, out_dir=EXPERIMENTS, resume=False):
     """Run the stages into out_dir/<today>-<description>/ (which must not exist), or with `resume`, continue the run in
-    out_dir/<description>/."""
+    out_dir/<description>/. Writes every output of the module docstring."""
     if 'train-web' not in interviews:
         raise ValueError('every run includes train-web, on which the intercept shift is fitted')
     if out_dir.resolve().is_relative_to(EXPERIMENTS.resolve()):
@@ -199,10 +242,8 @@ def run(description, model_name=DEFAULT_MODEL, interviews=('train-web',), stages
 
     raw = pd.concat([pd.read_parquet(p) for p in sorted((out / 'chunks').glob('*.parquet'))], ignore_index=True)
     raw = raw[KEY + ['CASEID'] + twin.RAW]
-    pred, shifts = postprocess(raw, df)
     raw.to_parquet(out / 'option_probs.parquet', index=False)
-    pred.to_parquet(out / 'predictions.parquet', index=False)
-    json.dump(shifts, open(out / 'shifts.json', 'w'), indent=1)
+    write_postprocessed(out, raw, df)
     log = pd.read_json(out / 'chunks' / 'log.jsonl', lines=True)
     log['stage'] = log.chunk.str.split('--').str[0]
     per_stage = log.groupby('stage')[['prompts', 'seconds']].sum()
@@ -222,6 +263,13 @@ def run(description, model_name=DEFAULT_MODEL, interviews=('train-web',), stages
     for p in (out / 'chunks').glob('*.parquet'):    # everything is in option_probs.parquet now
         p.unlink()
     print(json.dumps(json.load(open(out / 'run.json'))['per_stage'], indent=1))
+
+
+def write_postprocessed(out, raw, df):
+    pred, calibration = postprocess(raw, df)
+    pred.to_parquet(out / 'predictions.parquet', index=False)
+    json.dump(calibration, open(out / 'calibration.json', 'w'), indent=1)
+    calibration_cv(raw, df).to_csv(out / 'calibration_cv.csv', index=False, float_format='%.6f')
 
 
 def benchmark(model_name, sizes=(16, 32, 64, 128), n=512):
