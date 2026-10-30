@@ -1,0 +1,29 @@
+{
+ "name": "2026-10-30-twin-pilot-calibration",
+ "commit": "2d9882d8fc2ab338daa127f3bead75ef2d562476",
+ "data_csv_sha256": "5e0a7e1cd2a04e8378e43bc1b4316b4bb5387241bb40744f0c50c6f7cd49ca22",
+ "date": "2026-10-30",
+ "python": "3.14.6",
+ "packages": {
+  "numpy": "2.5.4",
+  "pandas": "3.0.6",
+  "scipy": "1.18.1"
+ },
+ "source": {
+  "name": "2026-10-30-twin-pilot-training-web",
+  "commit": "68b6f479ffc9e9414b15fcc9089b03c8396378de",
+  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+  "device": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+  "interviews": {
+   "train-web": 2257
+  },
+  "stages": [
+   "base",
+   "counterfactual",
+   "rerun",
+   "bf16"
+  ],
+  "option_probs_sha256": "cf06e1881c55ba6cefabfc66ebed552be8481bf316233561581f7976cba7d9c2"
+ }
+}
