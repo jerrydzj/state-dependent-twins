@@ -17,22 +17,23 @@ Prompts are scored in batches. A batch pads shorter prompts on the left to a com
 token is counted from its prompt's first real token, so padding cannot change a prompt's probabilities.
 
 The weights are released in bf16 and computed with in fp32. Converting bf16 to fp32 is exact, so the weights are the
-released ones. bf16 arithmetic keeps about 3 significant digits, and its rounding depends on the shape of the batch:
+released ones. bf16 arithmetic keeps two to three significant digits, and its rounding depends on the shape of the batch:
 with the Llama 3.2 1B model, the same prompt scored alone and in a batch differed by up to 0.03 in probability in
 bf16, and by 0.00001 in fp32.
 
-Calibration (`fit_calibration`, `apply_calibration`) adapts the twin's probabilities to the survey instrument with
-labelled interviews, by bias-corrected temperature scaling (Alexandari, Kundaje and Shrikumar, ICML 2020): temperature
-scaling (Guo et al., ICML 2017) plus a bias per class. The calibrated probabilities are softmax(a * log p + b), with
-b = (b_fav, 0, b_unf):
+Calibration (`fit_calibration`, `apply_calibration`) fits the twin's probabilities to recorded answers by
+bias-corrected temperature scaling (Alexandari, Kundaje and Shrikumar, ICML 2020): temperature scaling (Guo et al.,
+ICML 2017) plus a bias per class. The calibrated probabilities are softmax(a * log p + b), with b = (b_fav, 0, b_unf),
+so each class's calibrated log-odds against the middle class are a times its raw log-odds plus its b:
 
-- b, the shift, sets the levels: the base rate of each answer on this instrument, which no language model can know.
-- a, the scale, sets how strongly differences between respondents and states show up in individual answers: a < 1
-  shrinks every difference by the same factor and a > 1 widens it. a is kept at 0 or above, so it can damp or amplify
-  the model's structure but never reverse it.
+- b, the shift, adds the same amount to each class's log-odds in every prediction. At the fit, the twin's weighted mean
+  probability of each class equals that class's weighted share in the fitting data. b cannot tell the survey form's
+  effect from the model's errors about opinions, so it absorbs any constant part of either.
+- a, the scale, multiplies every difference in log-odds between two predictions by the same factor: a < 1 makes the
+  twin less sure and a > 1 more sure. a is kept at 0 or above, so it can damp or amplify the model's differences but
+  never reverse them.
 
-a and b are the same for every respondent, so the direction and relative sizes of the twin's differences across
-respondents and states stay the model's. With scale=False, a is fixed at 1 and only the levels move: the shifted
+With scale=False, a is fixed at 1, so every difference in log-odds between predictions stays the model's: the shifted
 twin. Both are fitted once per model, prompt, feature set and item, by weighted maximum likelihood on the training
 window's web interviews.
 """
