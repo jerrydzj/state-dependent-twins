@@ -1,0 +1,32 @@
+# Values entered on OSF for prereg/mvp-twin (see README.md)
+tag: prereg/mvp-twin
+commit: e4b385b35ead830b8161e1ba009208d63178f39e
+osf_url: https://osf.io/ahgkw   # DOI 10.17605/OSF.IO/AHGKW
+registered: 2026-11-03T20:55:49Z
+template: Open-Ended Registration
+title: >-
+  Do LLM twins gain on supervised models as conditions depart from the training data? A test on the Michigan Surveys
+  of Consumers
+description: mvp-twin.md, verbatim
+contributors: [Jerry Ding]
+license: CC-By Attribution 4.0 International
+subjects:
+  - Physical Sciences and Mathematics > Computer Sciences > Artificial Intelligence and Robotics
+  - Social and Behavioral Sciences > Economics
+tags:
+  - large language models
+  - digital twins
+  - synthetic respondents
+  - silicon sampling
+  - consumer sentiment
+  - Surveys of Consumers
+  - distribution shift
+  - out-of-distribution generalization
+  - Llama 3.1
+summary: |-
+  This is the first registration for this project. It preregisters the primary test of a study comparing an LLM twin (Llama 3.1 8B Instruct) with supervised models at predicting answers to the five items of the Index of Consumer Sentiment, from August 2024 to February 2026. The plan states the hypothesis, the design, one primary test with its decision rule, the secondary analyses and the procedure. It was written before any twin prediction for an evaluation interview existed. The evaluation answers and the supervised models' evaluation scores were already known, as the plan discloses.
+
+  The plan is frozen as git tag prereg/mvp-twin at commit e4b385b35ead830b8161e1ba009208d63178f39e (https://github.com/jerrydzj/state-dependent-twins/tree/prereg/mvp-twin). That commit also fixes the data hash, the prompts, the model revision and the calibration code. The attached file is an archive of the repository at that tag.
+supplemental_files:
+  - state-dependent-twins-prereg-mvp-twin.zip
+visibility: public immediately

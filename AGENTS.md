@@ -32,7 +32,7 @@ Optional body.
   (`PX1`, `Llama 3.1`, `FRED`); at most 72 characters; ASCII only; no trailing period; no scopes.
 - Commit straight to `main` unless asked to branch. Keep history linear (rebase, don't merge). Annotated tags mark
   snapshots that write-ups cite (`v0.1-mvp`) and frozen predictions (`prereg/<name>`). Git dates are self-reported, so
-  also archive `prereg/` tags externally.
+  also register each `prereg/` tag on OSF, following `docs/prereg/README.md`.
 
 ```
 data: add FRED macro series and SCA interview windows
