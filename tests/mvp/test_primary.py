@@ -7,7 +7,7 @@ from sdt.mvp.clean import CLASSES, OUT_PATH
 from sdt.mvp.primary import dissimilarity, outcome, primary_test, spearman, state_dissimilarity
 from sdt.mvp.score import score_predictions
 
-MONTHS = [202408, 202409, 202410, 202411, 202412]
+MONTHS = [202410, 202411, 202412, 202501, 202502]                         # crosses a year
 
 
 def test_dissimilarity_is_the_standardised_distance_to_the_nearest_training_row():
@@ -61,6 +61,21 @@ def test_primary_test_on_a_drift_only_one_model_tracks(twin_tracks, expected):
     assert out['outcome'] == expected
     assert out['rho'].observed.tolist() == pytest.approx([1.0 if twin_tracks else -1.0] * 2)
     assert out['rho_draws'].shape == (200, 2) and out['leave_one_out'].shape == (5, 2)
+    assert out['elapsed'].tolist() == [0, 1, 2, 3, 4]
+    # d rises with time here, so the time sibling equals rho on the sample, on every draw and leaving out each month
+    pd.testing.assert_frame_equal(out['rho_time'], out['rho'])
+    pd.testing.assert_frame_equal(out['rho_time_draws'], out['rho_draws'])
+    pd.testing.assert_frame_equal(out['leave_one_out_time'], out['leave_one_out'])
+
+
+def test_time_sibling_ignores_d_and_the_outcome_ignores_time():
+    pred, df, d = drifting(True)
+    shuffled = pd.Series([0.5, 0.3, 0.4, 0.1, 0.2], index=MONTHS)            # d now falls as A_t rises
+    a = primary_test(pred, df, d, twin='twin', comparators=['mnl', 'baseline'], n_boot=50)
+    b = primary_test(pred, df, shuffled, twin='twin', comparators=['mnl', 'baseline'], n_boot=50)
+    pd.testing.assert_frame_equal(a['rho_time'], b['rho_time'])
+    assert b['rho'].observed.tolist() == pytest.approx([spearman(shuffled, b['A'][c]) for c in ['mnl', 'baseline']])
+    assert a['outcome'] == 'support' and b['outcome'] == 'contradiction'
 
 
 def test_monthly_distances_average_to_the_distributional_score():

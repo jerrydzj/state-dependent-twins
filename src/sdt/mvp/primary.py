@@ -14,7 +14,12 @@
 6. Outcome: support if rho's interval lies above 0 against both comparators, contradiction if it lies below 0 against
    either, and inconclusive otherwise.
 
-Exploratory, not in the plan: rho with each month left out in turn, which shows whether one month carries the result.
+Exploratory, not in the plan:
+
+- rho with each month left out in turn, which shows whether one month carries the result.
+- The time sibling: rho, its interval and its leave-one-out values with elapsed months in place of d_t, which shows
+  whether A_t follows time rather than dissimilarity. d_t and elapsed months are almost uncorrelated over the
+  evaluation window, so the two siblings separate the two orderings. No decision rule applies to it.
 """
 import numpy as np
 import pandas as pd
@@ -102,6 +107,12 @@ def spearman(d, A):
     return (rA @ rd) / np.sqrt((rA ** 2).sum(axis=-1) * (rd ** 2).sum())
 
 
+def elapsed_months(months):
+    """Months since the first of `months` (YYYYMM integers)."""
+    n = np.asarray(months) // 100 * 12 + np.asarray(months) % 100
+    return n - n[0]
+
+
 def outcome(rho):
     """The plan's decision rule, from a table with `lo` and `hi` per comparator."""
     if (rho.hi < 0).any():
@@ -114,12 +125,13 @@ def primary_test(pred, df, d, twin=TWIN, comparators=COMPARATORS, n_boot=1000, s
     `df`, with d_t given as `d` (a Series indexed by month). `draws` defaults to score.draw_counts of `df`. Returns a
     dict of:
 
-    - d and A: d_t, and A_t per comparator (months x comparators).
+    - d, elapsed and A: d_t, elapsed months, and A_t per comparator (months x comparators).
     - rho: per comparator, rho on the sample (`observed`) and its interval (`lo`, `hi`).
     - rho_draws: rho on every draw (draws x comparators).
     - leave_one_out: rho with each month left out (exploratory; left-out month x comparators).
+    - rho_time, rho_time_draws, leave_one_out_time: the same three with elapsed months in place of d_t (exploratory).
     - distances: the sample's monthly distance per item and model.
-    - outcome: support, contradiction or inconclusive.
+    - outcome: support, contradiction or inconclusive, from rho alone.
     """
     if draws is None:
         draws = draw_counts(df, n_boot, seed)
@@ -127,14 +139,23 @@ def primary_test(pred, df, d, twin=TWIN, comparators=COMPARATORS, n_boot=1000, s
     A, drawn = advantages(observed, by_draw, twin, comparators)
     if not np.array_equal(d.index, A.index):
         raise ValueError('d must be indexed by the scored months, ascending')
-    dv = d.to_numpy(float)
-    rho_draws = pd.DataFrame({c: spearman(dv, drawn[c]) for c in comparators})
-    rho = pd.DataFrame({'observed': [spearman(dv, A[c].to_numpy()) for c in comparators],
-                        'lo': [np.percentile(rho_draws[c], 2.5) for c in comparators],
-                        'hi': [np.percentile(rho_draws[c], 97.5) for c in comparators]},
-                       index=pd.Index(comparators, name='comparator'))
     keep = {t: A.index != t for t in A.index}
-    leave_one_out = pd.DataFrame({c: {t: spearman(dv[k], A[c].to_numpy()[k]) for t, k in keep.items()}
-                                  for c in comparators}).rename_axis('left_out')
-    return {'d': d, 'A': A, 'rho': rho, 'rho_draws': rho_draws, 'leave_one_out': leave_one_out,
+
+    def correlate(x):
+        """rho of A_t with the ordering `x`: on the sample with its interval, on every draw, and with each month left
+        out."""
+        on_draws = pd.DataFrame({c: spearman(x, drawn[c]) for c in comparators})
+        table = pd.DataFrame({'observed': [spearman(x, A[c].to_numpy()) for c in comparators],
+                              'lo': [np.percentile(on_draws[c], 2.5) for c in comparators],
+                              'hi': [np.percentile(on_draws[c], 97.5) for c in comparators]},
+                             index=pd.Index(comparators, name='comparator'))
+        left_out = pd.DataFrame({c: {t: spearman(x[k], A[c].to_numpy()[k]) for t, k in keep.items()}
+                                 for c in comparators}).rename_axis('left_out')
+        return table, on_draws, left_out
+
+    elapsed = pd.Series(elapsed_months(A.index), index=A.index, name='elapsed_months')
+    rho, rho_draws, leave_one_out = correlate(d.to_numpy(float))
+    rho_time, rho_time_draws, leave_one_out_time = correlate(elapsed.to_numpy(float))
+    return {'d': d, 'elapsed': elapsed, 'A': A, 'rho': rho, 'rho_draws': rho_draws, 'leave_one_out': leave_one_out,
+            'rho_time': rho_time, 'rho_time_draws': rho_time_draws, 'leave_one_out_time': leave_one_out_time,
             'distances': observed, 'outcome': outcome(rho)}

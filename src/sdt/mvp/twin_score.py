@@ -17,11 +17,12 @@ Nothing is written until every check has passed. Writes:
 - scores.csv: the format of sdt.mvp.run's, for the supervised run's 13 models and the 12 twins (zero-shot `twin_`,
   shifted `twin_shift_` and scaled `twin_scale_`, on each feature set), with a row per pair in PAIRS.
 - primary.json: the plan's twin and comparators, rho on the sample and its interval against each comparator, the
-  outcome, and the Spearman correlation of d_t with elapsed months (a diagnostic in the plan).
-- primary_months.csv: per evaluation month, d_t, A_t against each comparator, and rho with that month left out
-  (exploratory).
+  outcome, the time sibling of rho with its interval (exploratory, primary.py), and the Spearman correlation of d_t
+  with elapsed months (a diagnostic in the plan).
+- primary_months.csv: per evaluation month, d_t, elapsed months, A_t against each comparator, and rho and its time
+  sibling with that month left out (exploratory).
 - primary_distances.csv: per item, model and month, the Wasserstein distance behind A_t.
-- rho_draws.csv: rho against each comparator on every bootstrap draw.
+- rho_draws.csv: rho and its time sibling against each comparator on every bootstrap draw.
 - calibration_by_period.csv: each twin calibration refit on each evaluation period, next to its fit on the training
   window's web interviews (a diagnostic in the plan).
 - run.json: commit, data hash, date, package versions, the two source runs, the bootstrap settings and PAIRS.
@@ -117,15 +118,18 @@ def score(df, twins, supervised):
 
     d = state_dissimilarity(df)
     result = primary_test(pred, test, d, TWIN, COMPARATORS, draws=draws)
-    rho = result['rho']
+    as_dict = lambda t: {c: {k: float(v) for k, v in r.items()} for c, r in t.iterrows()}
     primary = {'twin': TWIN, 'comparators': COMPARATORS, 'outcome': result['outcome'],
-               'rho': {c: {k: float(v) for k, v in r.items()} for c, r in rho.iterrows()},
-               'spearman_d_elapsed_months': float(spearman(d.to_numpy(), np.arange(len(d))))}
-    months = pd.concat([d.rename('d'), result['A'].add_prefix('A_'),
-                        result['leave_one_out'].add_prefix('rho_without_month_')], axis=1).rename_axis('month')
+               'rho': as_dict(result['rho']), 'rho_time': as_dict(result['rho_time']),
+               'spearman_d_elapsed_months': float(spearman(d.to_numpy(float), result['elapsed'].to_numpy(float)))}
+    months = pd.concat([d.rename('d'), result['elapsed'], result['A'].add_prefix('A_'),
+                        result['leave_one_out'].add_prefix('rho_without_month_'),
+                        result['leave_one_out_time'].add_prefix('rho_time_without_month_')],
+                       axis=1).rename_axis('month')
+    rho_draws = pd.concat([result['rho_draws'].add_prefix('rho_'), result['rho_time_draws'].add_prefix('rho_time_')],
+                          axis=1)
     return {'scores': scores, 'primary': primary, 'primary_months': months.reset_index(),
-            'primary_distances': result['distances'],
-            'rho_draws': result['rho_draws'].rename_axis('draw').reset_index(),
+            'primary_distances': result['distances'], 'rho_draws': rho_draws.rename_axis('draw').reset_index(),
             'calibration_by_period': calibration_by_period(twin_pred, df), 'data_hash': data_hash}
 
 

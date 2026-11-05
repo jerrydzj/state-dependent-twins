@@ -59,12 +59,15 @@ def test_run_writes_every_output(sources, tmp_path):
     (out,) = tmp_path.iterdir()
     primary = json.load(open(out / 'primary.json'))
     assert primary['twin'] == TWIN and primary['outcome'] in {'support', 'contradiction', 'inconclusive'}
-    assert all(r['lo'] <= r['hi'] for r in primary['rho'].values())
+    assert all(r['lo'] <= r['hi'] for s in ['rho', 'rho_time'] for r in primary[s].values())
+    assert set(primary['rho']) == set(primary['rho_time']) == set(COMPARATORS)
     months = pd.read_csv(out / 'primary_months.csv')
-    assert len(months) == 19 and months.d.notna().all()
+    assert len(months) == 19 and months.d.notna().all() and months.elapsed_months.tolist() == list(range(19))
+    assert {f'rho{s}_without_month_{c}' for s in ['', '_time'] for c in COMPARATORS} <= set(months)
     scores = pd.read_csv(out / 'scores.csv')
     assert {TWIN, f'{TWIN}-mnl_demographics_macro_politics'} <= set(scores.model)
-    assert len(pd.read_csv(out / 'rho_draws.csv')) == 1000
+    draws = pd.read_csv(out / 'rho_draws.csv')
+    assert len(draws) == 1000 and {f'rho{s}_{c}' for s in ['', '_time'] for c in COMPARATORS} <= set(draws)
     by_period = pd.read_csv(out / 'calibration_by_period.csv')
     assert set(by_period.fitted_on) == {'training web', 'Baseline', 'Flip', 'Tariffs'}
     recorded = json.load(open(root / 'twins' / 'calibration.json'))
