@@ -1,0 +1,161 @@
+feature_set,item,calibration,fitted_on,interviews,a,b_fav,b_unf
+demographics,PAGO,shift,training web,2253,1.000000,0.362068,1.093530
+demographics,PAGO,scale,training web,2253,0.195083,0.088739,0.589479
+demographics,PAGO,shift,Baseline,3061,1.000000,0.420257,1.026818
+demographics,PAGO,scale,Baseline,3061,0.165543,0.089636,0.566670
+demographics,PAGO,shift,Flip,2705,1.000000,0.161321,0.690050
+demographics,PAGO,scale,Flip,2705,0.187368,-0.083031,0.292866
+demographics,PAGO,shift,Tariffs,15390,1.000000,-0.049366,0.936829
+demographics,PAGO,scale,Tariffs,15390,0.178460,-0.252755,0.437633
+demographics,PEXP,shift,training web,2205,1.000000,0.257599,1.276311
+demographics,PEXP,scale,training web,2205,0.105775,-0.379309,-0.411864
+demographics,PEXP,shift,Baseline,2979,1.000000,0.466084,1.072551
+demographics,PEXP,scale,Baseline,2979,0.131991,-0.227426,-0.457248
+demographics,PEXP,shift,Flip,2647,1.000000,0.735867,1.357743
+demographics,PEXP,scale,Flip,2647,0.094709,-0.011498,-0.309628
+demographics,PEXP,shift,Tariffs,15108,1.000000,0.283296,2.227307
+demographics,PEXP,scale,Tariffs,15108,0.077787,-0.241580,0.220312
+demographics,BUS12,shift,training web,2234,1.000000,1.233862,0.469296
+demographics,BUS12,scale,training web,2234,0.212643,-0.521485,-0.171517
+demographics,BUS12,shift,Baseline,3044,1.000000,1.425985,0.281880
+demographics,BUS12,scale,Baseline,3044,0.251552,-0.278109,-0.296003
+demographics,BUS12,shift,Flip,2695,1.000000,1.428816,0.467101
+demographics,BUS12,scale,Flip,2695,0.239784,-0.257399,-0.145820
+demographics,BUS12,shift,Tariffs,15316,1.000000,1.535271,1.548272
+demographics,BUS12,scale,Tariffs,15316,0.130132,-0.406849,0.726395
+demographics,BUS5,shift,training web,2245,1.000000,1.999644,1.073304
+demographics,BUS5,scale,training web,2245,0.138515,-0.941125,-0.537128
+demographics,BUS5,shift,Baseline,3067,1.000000,2.395699,0.892914
+demographics,BUS5,scale,Baseline,3067,0.126717,-0.726492,-0.661087
+demographics,BUS5,shift,Flip,2711,1.000000,2.579191,1.233779
+demographics,BUS5,scale,Flip,2711,0.146676,-0.398615,-0.352894
+demographics,BUS5,shift,Tariffs,15405,1.000000,2.479719,2.317763
+demographics,BUS5,scale,Tariffs,15405,0.200508,-0.243825,0.606421
+demographics,DUR,shift,training web,2177,1.000000,-0.405272,0.404230
+demographics,DUR,scale,training web,2177,0.386026,2.037383,2.586115
+demographics,DUR,shift,Baseline,2959,1.000000,-0.060515,0.738514
+demographics,DUR,scale,Baseline,2959,0.372234,2.434202,2.969343
+demographics,DUR,shift,Flip,2618,1.000000,0.256237,0.654203
+demographics,DUR,scale,Flip,2618,0.387232,2.684246,2.843537
+demographics,DUR,shift,Tariffs,14963,1.000000,0.031172,0.898981
+demographics,DUR,scale,Tariffs,14963,0.287146,2.859163,3.434154
+demographics_macro,PAGO,shift,training web,2253,1.000000,0.468798,1.577732
+demographics_macro,PAGO,scale,training web,2253,0.342039,0.156825,0.859140
+demographics_macro,PAGO,shift,Baseline,3061,1.000000,0.506689,1.537046
+demographics_macro,PAGO,scale,Baseline,3061,0.287415,0.145852,0.787297
+demographics_macro,PAGO,shift,Flip,2705,1.000000,0.442147,1.209210
+demographics_macro,PAGO,scale,Flip,2705,0.313451,0.015308,0.522021
+demographics_macro,PAGO,shift,Tariffs,15390,1.000000,0.366864,1.362426
+demographics_macro,PAGO,scale,Tariffs,15390,0.299519,-0.133373,0.645828
+demographics_macro,PEXP,shift,training web,2205,1.000000,0.957973,1.049386
+demographics_macro,PEXP,scale,training web,2205,0.206440,-0.174153,-0.283262
+demographics_macro,PEXP,shift,Baseline,2979,1.000000,1.037966,0.913531
+demographics_macro,PEXP,scale,Baseline,2979,0.249911,-0.000013,-0.310412
+demographics_macro,PEXP,shift,Flip,2647,1.000000,1.308213,1.221206
+demographics_macro,PEXP,scale,Flip,2647,0.164026,0.128365,-0.224940
+demographics_macro,PEXP,shift,Tariffs,15108,1.000000,1.092978,1.862225
+demographics_macro,PEXP,scale,Tariffs,15108,0.119979,-0.142620,0.256794
+demographics_macro,BUS12,shift,training web,2234,1.000000,0.583476,0.890714
+demographics_macro,BUS12,scale,training web,2234,0.251186,-0.607185,-0.036816
+demographics_macro,BUS12,shift,Baseline,3044,1.000000,0.728897,0.675701
+demographics_macro,BUS12,scale,Baseline,3044,0.296630,-0.388115,-0.149223
+demographics_macro,BUS12,shift,Flip,2695,1.000000,0.816478,0.889149
+demographics_macro,BUS12,scale,Flip,2695,0.237702,-0.419047,-0.053965
+demographics_macro,BUS12,shift,Tariffs,15316,1.000000,1.156203,1.849407
+demographics_macro,BUS12,scale,Tariffs,15316,0.018175,-0.693074,0.628292
+demographics_macro,BUS5,shift,training web,2245,1.000000,1.202244,2.336757
+demographics_macro,BUS5,scale,training web,2245,0.149874,-1.053818,-0.331957
+demographics_macro,BUS5,shift,Baseline,3067,1.000000,1.495609,2.150500
+demographics_macro,BUS5,scale,Baseline,3067,0.119176,-0.890949,-0.535336
+demographics_macro,BUS5,shift,Flip,2711,1.000000,1.626952,2.560037
+demographics_macro,BUS5,scale,Flip,2711,0.119796,-0.642089,-0.256320
+demographics_macro,BUS5,shift,Tariffs,15405,1.000000,1.949284,3.466602
+demographics_macro,BUS5,scale,Tariffs,15405,0.156140,-0.546504,0.692892
+demographics_macro,DUR,shift,training web,2177,1.000000,-0.360945,0.344432
+demographics_macro,DUR,scale,training web,2177,0.674848,0.914666,1.518380
+demographics_macro,DUR,shift,Baseline,2959,1.000000,-0.048986,0.721453
+demographics_macro,DUR,scale,Baseline,2959,0.743921,0.963828,1.635500
+demographics_macro,DUR,shift,Flip,2618,1.000000,0.237504,0.682374
+demographics_macro,DUR,scale,Flip,2618,0.467082,2.353258,2.567650
+demographics_macro,DUR,shift,Tariffs,14963,1.000000,0.048924,0.873142
+demographics_macro,DUR,scale,Tariffs,14963,0.372133,2.522081,3.120982
+demographics_politics,PAGO,shift,training web,2253,1.000000,0.042917,1.056144
+demographics_politics,PAGO,scale,training web,2253,0.204850,0.038787,0.577223
+demographics_politics,PAGO,shift,Baseline,3061,1.000000,0.080592,0.988305
+demographics_politics,PAGO,scale,Baseline,3061,0.175943,0.046138,0.556474
+demographics_politics,PAGO,shift,Flip,2705,1.000000,-0.238631,0.562518
+demographics_politics,PAGO,scale,Flip,2705,0.188290,-0.150782,0.264012
+demographics_politics,PAGO,shift,Tariffs,15390,1.000000,-0.573337,0.742207
+demographics_politics,PAGO,scale,Tariffs,15390,0.165990,-0.339625,0.396278
+demographics_politics,PEXP,shift,training web,2205,1.000000,-0.278702,1.315404
+demographics_politics,PEXP,scale,training web,2205,0.138860,-0.415020,-0.318677
+demographics_politics,PEXP,shift,Baseline,2979,1.000000,-0.098855,1.079124
+demographics_politics,PEXP,scale,Baseline,2979,0.163902,-0.280611,-0.367815
+demographics_politics,PEXP,shift,Flip,2647,1.000000,0.243561,1.285742
+demographics_politics,PEXP,scale,Flip,2647,0.072955,-0.076363,-0.364912
+demographics_politics,PEXP,shift,Tariffs,15108,1.000000,-0.247144,2.138905
+demographics_politics,PEXP,scale,Tariffs,15108,0.096280,-0.276546,0.255955
+demographics_politics,BUS12,shift,training web,2234,1.000000,1.229465,0.431394
+demographics_politics,BUS12,scale,training web,2234,0.387443,-0.130553,-0.038983
+demographics_politics,BUS12,shift,Baseline,3044,1.000000,1.387012,0.248383
+demographics_politics,BUS12,scale,Baseline,3044,0.470450,0.206216,-0.134267
+demographics_politics,BUS12,shift,Flip,2695,1.000000,1.424878,0.238721
+demographics_politics,BUS12,scale,Flip,2695,0.182596,-0.404806,-0.242002
+demographics_politics,BUS12,shift,Tariffs,15316,1.000000,1.406888,1.207184
+demographics_politics,BUS12,scale,Tariffs,15316,0.134271,-0.421670,0.685204
+demographics_politics,BUS5,shift,training web,2245,1.000000,1.815770,0.908701
+demographics_politics,BUS5,scale,training web,2245,0.229649,-0.661046,-0.391942
+demographics_politics,BUS5,shift,Baseline,3067,1.000000,2.129634,0.738836
+demographics_politics,BUS5,scale,Baseline,3067,0.237764,-0.369405,-0.478753
+demographics_politics,BUS5,shift,Flip,2711,1.000000,2.355419,0.876232
+demographics_politics,BUS5,scale,Flip,2711,0.087367,-0.663877,-0.510086
+demographics_politics,BUS5,shift,Tariffs,15405,1.000000,1.946235,1.782644
+demographics_politics,BUS5,scale,Tariffs,15405,0.254253,-0.181676,0.588756
+demographics_politics,DUR,shift,training web,2177,1.000000,-0.414382,0.421848
+demographics_politics,DUR,scale,training web,2177,0.479110,1.662096,2.262762
+demographics_politics,DUR,shift,Baseline,2959,1.000000,-0.071436,0.755164
+demographics_politics,DUR,scale,Baseline,2959,0.532217,1.793976,2.409499
+demographics_politics,DUR,shift,Flip,2618,1.000000,0.238943,0.680166
+demographics_politics,DUR,scale,Flip,2618,0.511521,2.183417,2.412550
+demographics_politics,DUR,shift,Tariffs,14963,1.000000,0.045264,0.878706
+demographics_politics,DUR,scale,Tariffs,14963,0.301773,2.803472,3.375393
+demographics_macro_politics,PAGO,shift,training web,2253,1.000000,0.685466,1.550141
+demographics_macro_politics,PAGO,scale,training web,2253,0.456812,0.317093,0.969186
+demographics_macro_politics,PAGO,shift,Baseline,3061,1.000000,0.691649,1.533325
+demographics_macro_politics,PAGO,scale,Baseline,3061,0.386546,0.276820,0.888465
+demographics_macro_politics,PAGO,shift,Flip,2705,1.000000,0.531937,1.186324
+demographics_macro_politics,PAGO,scale,Flip,2705,0.380639,0.094897,0.580028
+demographics_macro_politics,PAGO,shift,Tariffs,15390,1.000000,0.489582,1.280213
+demographics_macro_politics,PAGO,scale,Tariffs,15390,0.350526,-0.053293,0.668653
+demographics_macro_politics,PEXP,shift,training web,2205,1.000000,1.226365,1.000733
+demographics_macro_politics,PEXP,scale,training web,2205,0.302041,0.052306,-0.120430
+demographics_macro_politics,PEXP,shift,Baseline,2979,1.000000,1.301762,0.879391
+demographics_macro_politics,PEXP,scale,Baseline,2979,0.342629,0.225338,-0.151107
+demographics_macro_politics,PEXP,shift,Flip,2647,1.000000,1.510696,1.179066
+demographics_macro_politics,PEXP,scale,Flip,2647,0.110147,0.061937,-0.332961
+demographics_macro_politics,PEXP,shift,Tariffs,15108,1.000000,1.356964,1.757736
+demographics_macro_politics,PEXP,scale,Tariffs,15108,0.211789,0.054543,0.408197
+demographics_macro_politics,BUS12,shift,training web,2234,1.000000,0.594613,0.927565
+demographics_macro_politics,BUS12,scale,training web,2234,0.611475,-0.016089,0.441909
+demographics_macro_politics,BUS12,shift,Baseline,3044,1.000000,0.736051,0.703691
+demographics_macro_politics,BUS12,scale,Baseline,3044,0.670583,0.219706,0.319814
+demographics_macro_politics,BUS12,shift,Flip,2695,1.000000,0.803314,0.888044
+demographics_macro_politics,BUS12,scale,Flip,2695,0.067041,-0.717248,-0.275704
+demographics_macro_politics,BUS12,shift,Tariffs,15316,1.000000,1.142452,1.782177
+demographics_macro_politics,BUS12,scale,Tariffs,15316,0.339427,-0.068317,1.003178
+demographics_macro_politics,BUS5,shift,training web,2245,1.000000,1.195922,2.057586
+demographics_macro_politics,BUS5,scale,training web,2245,0.312865,-0.598744,0.113660
+demographics_macro_politics,BUS5,shift,Baseline,3067,1.000000,1.461845,1.903579
+demographics_macro_politics,BUS5,scale,Baseline,3067,0.345449,-0.257436,0.101704
+demographics_macro_politics,BUS5,shift,Flip,2711,1.000000,1.627957,2.283454
+demographics_macro_politics,BUS5,scale,Flip,2711,0.000000,-0.994627,-0.662019
+demographics_macro_politics,BUS5,shift,Tariffs,15405,1.000000,1.907710,2.976130
+demographics_macro_politics,BUS5,scale,Tariffs,15405,0.466003,0.415974,1.485222
+demographics_macro_politics,DUR,shift,training web,2177,1.000000,-0.388004,0.382340
+demographics_macro_politics,DUR,scale,training web,2177,0.946438,-0.176276,0.573727
+demographics_macro_politics,DUR,shift,Baseline,2959,1.000000,-0.076896,0.763637
+demographics_macro_politics,DUR,scale,Baseline,2959,1.041395,-0.241923,0.617582
+demographics_macro_politics,DUR,shift,Flip,2618,1.000000,0.197713,0.746905
+demographics_macro_politics,DUR,scale,Flip,2618,0.696499,1.415417,1.801481
+demographics_macro_politics,DUR,shift,Tariffs,14963,1.000000,0.028532,0.902952
+demographics_macro_politics,DUR,scale,Tariffs,14963,0.523466,1.916085,2.594939

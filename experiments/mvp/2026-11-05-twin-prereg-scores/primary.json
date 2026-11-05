@@ -1,0 +1,33 @@
+{
+ "twin": "twin_shift_demographics_macro_politics",
+ "comparators": [
+  "mnl_demographics_macro_politics",
+  "baseline"
+ ],
+ "outcome": "inconclusive",
+ "rho": {
+  "mnl_demographics_macro_politics": {
+   "observed": -0.014035087719298246,
+   "lo": -0.09649122807017543,
+   "hi": 0.10004385964912277
+  },
+  "baseline": {
+   "observed": 0.054385964912280704,
+   "lo": -0.11578947368421053,
+   "hi": 0.4193421052631579
+  }
+ },
+ "rho_time": {
+  "mnl_demographics_macro_politics": {
+   "observed": 0.8017543859649123,
+   "lo": 0.7368421052631579,
+   "hi": 0.8491228070175438
+  },
+  "baseline": {
+   "observed": 0.48947368421052634,
+   "lo": 0.18592105263157893,
+   "hi": 0.6473684210526316
+  }
+ },
+ "spearman_d_elapsed_months": 0.05964912280701754
+}

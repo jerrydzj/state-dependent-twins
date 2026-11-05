@@ -1,0 +1,184 @@
+{
+ "name": "2026-11-05-twin-prereg-scores",
+ "commit": "0f6b6bc73ec4900e6fd48d601080bb8fbb7fd493",
+ "data_csv_sha256": "5e0a7e1cd2a04e8378e43bc1b4316b4bb5387241bb40744f0c50c6f7cd49ca22",
+ "date": "2026-11-05",
+ "runtime_seconds": 16,
+ "python": "3.14.6",
+ "packages": {
+  "numpy": "2.5.4",
+  "pandas": "3.0.6",
+  "scipy": "1.18.1",
+  "scikit-learn": "1.9.1",
+  "torch": "2.14.1"
+ },
+ "sources": {
+  "twins": {
+   "name": "2026-11-05-twin-prereg-eval",
+   "commit": "e4b385b35ead830b8161e1ba009208d63178f39e",
+   "option_probs_sha256": "f136719a8d54a643d681de9c8ac8761a8fc159b91224a0249899816b520c3d5e"
+  },
+  "supervised": {
+   "name": "2026-10-26-supervised-macro-politics-ridge",
+   "commit": "53877d840425f581fd4fc3e3fc2bc533e7ba8ebf"
+  }
+ },
+ "bootstrap": {
+  "draws": 1000,
+  "seed": 0
+ },
+ "pairs": [
+  [
+   "ridge_demographics",
+   "mnl_demographics"
+  ],
+  [
+   "ridge_demographics_macro",
+   "mnl_demographics_macro"
+  ],
+  [
+   "ridge_demographics_politics",
+   "mnl_demographics_politics"
+  ],
+  [
+   "ridge_demographics_macro_politics",
+   "mnl_demographics_macro_politics"
+  ],
+  [
+   "mnl_demographics",
+   "gb_demographics"
+  ],
+  [
+   "mnl_demographics_macro",
+   "gb_demographics_macro"
+  ],
+  [
+   "mnl_demographics_politics",
+   "gb_demographics_politics"
+  ],
+  [
+   "mnl_demographics_macro_politics",
+   "gb_demographics_macro_politics"
+  ],
+  [
+   "mnl_demographics_macro",
+   "mnl_demographics"
+  ],
+  [
+   "ridge_demographics_macro",
+   "ridge_demographics"
+  ],
+  [
+   "gb_demographics_macro",
+   "gb_demographics"
+  ],
+  [
+   "mnl_demographics_politics",
+   "mnl_demographics"
+  ],
+  [
+   "ridge_demographics_politics",
+   "ridge_demographics"
+  ],
+  [
+   "gb_demographics_politics",
+   "gb_demographics"
+  ],
+  [
+   "mnl_demographics_macro_politics",
+   "mnl_demographics"
+  ],
+  [
+   "ridge_demographics_macro_politics",
+   "ridge_demographics"
+  ],
+  [
+   "gb_demographics_macro_politics",
+   "gb_demographics"
+  ],
+  [
+   "twin_demographics",
+   "mnl_demographics"
+  ],
+  [
+   "twin_shift_demographics",
+   "mnl_demographics"
+  ],
+  [
+   "twin_scale_demographics",
+   "mnl_demographics"
+  ],
+  [
+   "twin_demographics_macro",
+   "mnl_demographics_macro"
+  ],
+  [
+   "twin_shift_demographics_macro",
+   "mnl_demographics_macro"
+  ],
+  [
+   "twin_scale_demographics_macro",
+   "mnl_demographics_macro"
+  ],
+  [
+   "twin_demographics_politics",
+   "mnl_demographics_politics"
+  ],
+  [
+   "twin_shift_demographics_politics",
+   "mnl_demographics_politics"
+  ],
+  [
+   "twin_scale_demographics_politics",
+   "mnl_demographics_politics"
+  ],
+  [
+   "twin_demographics_macro_politics",
+   "mnl_demographics_macro_politics"
+  ],
+  [
+   "twin_shift_demographics_macro_politics",
+   "mnl_demographics_macro_politics"
+  ],
+  [
+   "twin_scale_demographics_macro_politics",
+   "mnl_demographics_macro_politics"
+  ],
+  [
+   "twin_demographics_macro",
+   "twin_demographics"
+  ],
+  [
+   "twin_shift_demographics_macro",
+   "twin_shift_demographics"
+  ],
+  [
+   "twin_scale_demographics_macro",
+   "twin_scale_demographics"
+  ],
+  [
+   "twin_demographics_politics",
+   "twin_demographics"
+  ],
+  [
+   "twin_shift_demographics_politics",
+   "twin_shift_demographics"
+  ],
+  [
+   "twin_scale_demographics_politics",
+   "twin_scale_demographics"
+  ],
+  [
+   "twin_demographics_macro_politics",
+   "twin_demographics"
+  ],
+  [
+   "twin_shift_demographics_macro_politics",
+   "twin_shift_demographics"
+  ],
+  [
+   "twin_scale_demographics_macro_politics",
+   "twin_scale_demographics"
+  ]
+ ]
+}
