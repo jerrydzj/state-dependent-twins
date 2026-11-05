@@ -52,10 +52,11 @@ def git(*args):
     return subprocess.run(['git', *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
 
 
-def score_run(pred, df, pairs=PAIRS):
+def score_run(pred, df, pairs=PAIRS, draws=None):
     """score_cell for every evaluation cell, with `period` and `group` columns first. The bootstrap draws the whole
-    evaluation window once, and every cell uses the counts of its own interviews from those draws."""
-    draws = draw_counts(split(df)[1])
+    evaluation window once (`draws`, by default score.draw_counts of the window), and every cell uses the counts of
+    its own interviews from those draws."""
+    draws = draw_counts(split(df)[1]) if draws is None else draws
     out = [score_cell(pred[pred.CASEID.isin(d.CASEID)], d, pairs, draws).assign(period=p, group=g)
            for p, g, d in cells(df)]
     scores = pd.concat(out, ignore_index=True)
