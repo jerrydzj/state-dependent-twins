@@ -1,0 +1,45 @@
+{
+ "name": "2026-11-05-twin-prereg-eval",
+ "commit": "e4b385b35ead830b8161e1ba009208d63178f39e",
+ "data_csv_sha256": "5e0a7e1cd2a04e8378e43bc1b4316b4bb5387241bb40744f0c50c6f7cd49ca22",
+ "option_probs_sha256": "f136719a8d54a643d681de9c8ac8761a8fc159b91224a0249899816b520c3d5e",
+ "date": "2026-11-05",
+ "runtime_seconds_last_session": 2,
+ "python": "3.14.10",
+ "packages": {
+  "torch": "2.14.1",
+  "transformers": "5.20.2",
+  "numpy": "2.5.4",
+  "pandas": "3.0.6",
+  "scipy": "1.18.1"
+ },
+ "model": "meta-llama/Llama-3.1-8B-Instruct",
+ "revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+ "device": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+ "dtype": "fp32 (released bf16 weights converted exactly), except the bf16 stage",
+ "batch_size": 16,
+ "limit": null,
+ "interviews": {
+  "train-web": 2257,
+  "eval": 21183
+ },
+ "stages": [
+  "base"
+ ],
+ "scenarios": [
+  "pres_R",
+  "cpi_9.1"
+ ],
+ "counterfactual_feature_set": "demographics_macro_politics",
+ "rerun": {
+  "per_cell": 10,
+  "seed": 0
+ },
+ "per_stage": {
+  "base": {
+   "prompts": 468800,
+   "seconds": 40273,
+   "prompts_per_second": 11.64
+  }
+ }
+}
