@@ -2,11 +2,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from sdt.mvp.clean import clean, load_raw
+from sdt.mvp.clean import CLASSES, clean, load_raw
 from sdt.mvp.encode import mnl_features
 from sdt.mvp.models import BaselineShares, mnl
-from sdt.mvp.score import (GROUPS, PERIODS, bootstrap, cells, distribution_score, evaluate, log_loss, noise_floor, predict,
-                           score_predictions, skill, wasserstein)
+from sdt.mvp.score import (GROUPS, PERIODS, bootstrap, cells, class_index, distribution_score, draw_counts, evaluate,
+                           log_loss, noise_floor, predict, score_predictions, skill, wasserstein)
 from sdt.mvp.windows import EVAL_START, HORIZON, TRAIN_END, split
 from sdt.mvp.clean import OUT_PATH
 from sdt.paths import DATA, RAW_CSV, ROOT
@@ -107,6 +107,48 @@ def test_bootstrap_is_paired():
     assert ci.loc['mnl-gb', 'log_loss_hi'] < 0                                              # mnl's loss is lower
 
 
+def test_draws_keep_each_month_size_and_ignore_row_order():
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame({'CASEID': rng.permutation(90), 'YYYYMM': np.repeat([202409, 202408, 202410], [20, 30, 40])})
+    draws = draw_counts(df, n_boot=50)
+    assert list(draws.index) == list(df.sort_values(['YYYYMM', 'CASEID']).CASEID)       # months ascending, then CASEID
+    month = df.set_index('CASEID').loc[draws.index, 'YYYYMM'].to_numpy()
+    assert (draws.groupby(month).sum().to_numpy() == [[30], [20], [40]]).all()          # every draw keeps month sizes
+    pd.testing.assert_frame_equal(draws, draw_counts(df.sample(frac=1, random_state=1), n_boot=50))
+
+
+def test_bootstrap_shares_draws_across_items():
+    # Two items with the same answers and predictions get the same intervals only if every draw counts each interview
+    # the same in both; separate draws per item would give them different intervals
+    rng = np.random.default_rng(0)
+    n = 400
+    y = rng.choice(CLASSES, n)
+    df = pd.DataFrame({'CASEID': np.arange(n), 'YYYYMM': np.repeat([202408, 202409], n // 2),
+                       'WT': rng.uniform(0.5, 1.5, n), 'PAGO': y, 'PEXP': y})
+    P = pd.DataFrame(rng.dirichlet([1, 1, 1], n), columns=CLASSES).assign(CASEID=np.arange(n))
+    pred = pd.concat([p.assign(item=item, model=m) for item in ['PAGO', 'PEXP']
+                      for m, p in [('baseline', P.assign(fav=1 / 3, mid=1 / 3, unf=1 / 3)), ('mnl', P)]])
+    ci = bootstrap(pred, df, n_boot=200).set_index(['model', 'item'])
+    pd.testing.assert_series_equal(ci.loc[('mnl', 'PAGO')], ci.loc[('mnl', 'PEXP')], check_names=False)
+
+
+def test_cell_keeps_its_interviews_counts_from_the_window_draws():
+    rng = np.random.default_rng(0)
+    n = 300
+    df = pd.DataFrame({'CASEID': np.arange(n), 'YYYYMM': np.repeat([202408, 202409, 202410], n // 3),
+                       'WT': rng.uniform(0.5, 1.5, n), 'PAGO': rng.choice(CLASSES, n)})
+    pred = pd.DataFrame(rng.dirichlet([1, 1, 1], n), columns=CLASSES).assign(item='PAGO', CASEID=np.arange(n),
+                                                                             model='mnl')
+    draws = draw_counts(df, n_boot=200)
+    cell = df[df.YYYYMM == 202409]
+    in_cell = pred[pred.CASEID.isin(cell.CASEID)]
+    ci = bootstrap(in_cell, cell, draws=draws).iloc[0]
+    cw = draws.loc[cell.CASEID].to_numpy().T * cell.WT.to_numpy()                          # weights in each draw
+    nll = -np.log(in_cell[CLASSES].to_numpy()[np.arange(len(cell)), class_index(cell.PAGO)])
+    assert [ci.log_loss_lo, ci.log_loss_hi] == pytest.approx(np.percentile(cw @ nll / cw.sum(axis=1), [2.5, 97.5]))
+    assert ci.log_loss_lo != bootstrap(in_cell, cell, n_boot=200).iloc[0].log_loss_lo       # drawn alone: other draws
+
+
 def test_cells_partition_the_evaluation_window():
     months = [202407, 202408, 202410, 202411, 202501, 202502, 202602]
     df = pd.DataFrame({'CASEID': range(14), 'YYYYMM': months * 2,
@@ -125,8 +167,9 @@ FIRST_RUN = ROOT / 'experiments' / 'mvp' / '2026-10-22-supervised-demographics'
 
 @pytest.mark.skipif(not (FIRST_RUN / 'predictions.parquet').exists() or not OUT_PATH.exists(),
                     reason='predictions or clean table not built')
-def test_all_cell_reproduces_first_run_scores():
-    # The 'all'/'all' cell must equal the scores reported in notebook 03, which predate the cells
+def test_all_cell_reproduces_first_run_point_scores():
+    # The 'all'/'all' cell must give the point scores reported in notebook 03, which predate the cells. Its intervals
+    # came from separate draws per item, so they are not compared
     from sdt.mvp.run import score_cell
     run = FIRST_RUN
     df = pd.read_parquet(OUT_PATH)
@@ -136,9 +179,9 @@ def test_all_cell_reproduces_first_run_scores():
     old = pd.read_csv(run / 'scores.csv')
     if 'period' in old:
         old = old[(old.period == 'all') & (old.group == 'all')].drop(columns=['period', 'group'])
-    key = ['item', 'model']
-    pd.testing.assert_frame_equal(new.round(6).set_index(key).sort_index(), old.set_index(key).sort_index()[new.columns.drop(key)],
-                                  check_exact=False, atol=1e-6, rtol=0)
+    key, point = ['item', 'model'], ['log_loss', 'wasserstein', 'log_loss_skill', 'wasserstein_skill']
+    pd.testing.assert_frame_equal(new.round(6).set_index(key).sort_index()[point],
+                                  old.set_index(key).sort_index()[point], check_exact=False, atol=1e-6, rtol=0)
 
 
 def test_score_cell_differences_follow_pairs():

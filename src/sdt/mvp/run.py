@@ -9,8 +9,9 @@ gradient boosting per item on the training window; the baseline shares are fitte
 levels. Writes:
 
 - scores.csv: log loss and Wasserstein distance per evaluation cell (period x party group, see score.cells), model and
-  item, with skill against the baseline shares and 95% bootstrap intervals (`_lo`, `_hi`); a row per pair in PAIRS
-  for the difference a - b; and the uniform guess and the bootstrap noise floor as reference rows.
+  item, with skill against the baseline shares and 95% bootstrap intervals (`_lo`, `_hi`) from one set of draws that
+  every cell shares; a row per pair in PAIRS for the difference a - b; and the uniform guess and the bootstrap noise
+  floor as reference rows.
 - gb_settings.json: per feature set and item, the chosen setting and each grid setting's best validation loss and
   tree count.
 - ridge_settings.json: per feature set and item, the chosen C (null for no penalty) and each C's validation loss.
@@ -32,7 +33,7 @@ from sdt.mvp import encode
 from sdt.mvp import tune as tuning
 from sdt.mvp.clean import OUT_PATH, OUTCOMES
 from sdt.mvp.models import BaselineShares, Ridge, gb, mnl
-from sdt.mvp.score import benchmarks, bootstrap, cells, fit_predict, score_predictions, skill
+from sdt.mvp.score import benchmarks, bootstrap, cells, draw_counts, fit_predict, score_predictions, skill
 from sdt.mvp.windows import split
 from sdt.paths import RAW_CSV, ROOT
 
@@ -52,16 +53,19 @@ def git(*args):
 
 
 def score_run(pred, df, pairs=PAIRS):
-    """score_cell for every evaluation cell, with `period` and `group` columns first."""
-    out = [score_cell(pred[pred.CASEID.isin(d.CASEID)], d, pairs).assign(period=p, group=g) for p, g, d in cells(df)]
+    """score_cell for every evaluation cell, with `period` and `group` columns first. The bootstrap draws the whole
+    evaluation window once, and every cell uses the counts of its own interviews from those draws."""
+    draws = draw_counts(split(df)[1])
+    out = [score_cell(pred[pred.CASEID.isin(d.CASEID)], d, pairs, draws).assign(period=p, group=g)
+           for p, g, d in cells(df)]
     scores = pd.concat(out, ignore_index=True)
     return scores[['period', 'group'] + [c for c in scores if c not in ('period', 'group')]]
 
 
-def score_cell(pred, df, pairs=PAIRS):
+def score_cell(pred, df, pairs=PAIRS, draws=None):
     """Scores table for one cell's predictions: point scores and skill per model and item, the difference a - b for
-    each pair of models present, bootstrap intervals, and the uniform guess and noise floor as reference rows. Uses
-    only saved predictions."""
+    each pair of models present, bootstrap intervals (from `draws` if given, see score.bootstrap), and the uniform
+    guess and noise floor as reference rows. Uses only saved predictions."""
     models = list(pred.model.unique())
     pairs = [(a, b) for a, b in pairs if a in models and b in models]
     scores = pd.concat([score_predictions(g, df).assign(model=k) for k, g in pred.groupby('model', sort=False)])
@@ -76,7 +80,7 @@ def score_cell(pred, df, pairs=PAIRS):
     base = scores[scores.model == 'baseline'].set_index('item')
     for s in ['log_loss', 'wasserstein']:
         scores[f'{s}_skill'] = skill(scores[s], scores.item.map(base[s])).where(scores.model.isin(models))
-    return scores.merge(bootstrap(pred, df, pairs=pairs), on=['item', 'model'], how='left')
+    return scores.merge(bootstrap(pred, df, pairs=pairs, draws=draws), on=['item', 'model'], how='left')
 
 
 def require_clean_tree():
