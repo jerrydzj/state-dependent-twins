@@ -32,7 +32,7 @@ variables to those of the nearest training month.
 
 ## Results
 
-![Figure 5 of notebook 06](docs/figures/answer_shares.png)
+![Figure 5 of notebook 06](assets/answer_shares.png)
 
 Predictions are scored on answer shares, the shares of a month's respondents who give each answer to an item, and on
 individual answers. The figure shows how far each model's predicted answer shares were from the actual shares on each
