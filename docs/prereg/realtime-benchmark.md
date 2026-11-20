@@ -117,8 +117,11 @@ listed, then by their remaining setting as listed.
   of Applied Econometrics 35(4)). The test is two-sided at 5%, with critical value 2.78.
 - **Outcome:** the twins are more accurate if p < 0.05 and d̄ > 0, the simple models are more accurate if p < 0.05 and
   d̄ < 0, and neither is shown more accurate otherwise.
-- **Confirmation:** d̄ is also reported for August 2024 to February 2026 and for March to September 2026. The second
-  period confirms the outcome if its d̄ has the sign of the full window's.
+- **Interval:** d̄ ± 2.78 × its standard error, the 95% interval of the same test, reported in loss units and as a
+  percentage of the simple pick's mean loss.
+- **Subperiods:** d̄ and its interval, computed as above with m = ⌊T^(1/3)⌋ for each period's T, are also reported for
+  August 2024 to February 2026, the 19 months known before registration, and for March to September 2026, the 7 unseen
+  months. They carry no decision rule.
 
 ## 8. Secondary analysis
 
