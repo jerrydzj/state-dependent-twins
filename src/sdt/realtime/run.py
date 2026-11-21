@@ -104,12 +104,14 @@ def twin_inputs(raw, df, last_month):
 
 
 def changed_interviews(old, new):
-    """CASEIDs whose month, mode or inputs differ between two clean tables, or that are in only one."""
+    """CASEIDs in both clean tables whose month, mode or inputs differ between them. Missing counts as a value, so a
+    change between missing and a value is a change."""
     columns = ['YYYYMM', 'web', *INPUTS]
     a, b = old.set_index('CASEID')[columns], new.set_index('CASEID')[columns]
     both = a.index.intersection(b.index)
-    differ = ~((a.loc[both] == b.loc[both]) | (a.loc[both].isna() & b.loc[both].isna())).all(axis=1)
-    return set(both[differ.to_numpy()]) | set(a.index.symmetric_difference(b.index))
+    a, b = a.loc[both], b.loc[both]
+    same = (a == b).fillna(False).astype(bool) | (a.isna() & b.isna())
+    return set(both[~same.all(axis=1).to_numpy()])
 
 
 def check_reproduction(raw, df, previous_twins=PREVIOUS_TWINS, previous_data=PREVIOUS_DATA):

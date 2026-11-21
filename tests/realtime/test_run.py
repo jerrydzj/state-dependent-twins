@@ -123,10 +123,13 @@ def test_reproduction_check_allows_only_changed_interviews_to_differ(to_july_202
         check_reproduction(raw.assign(p1=raw.p1 + 1e-3), to_july_2024, previous)
 
 
-def test_changed_interviews():
-    old = pd.DataFrame({'CASEID': [1, 2, 3], 'YYYYMM': 202408, 'web': 1, **{c: [1.0, np.nan, 2.0] for c in
-                                                                          realtime.INPUTS}})
+def test_changed_interviews_count_a_change_to_or_from_missing(to_july_2024):
+    old = to_july_2024.head(4).copy()
     new = old.copy()
-    new.loc[2, 'NUMADT'] = 3.0
-    assert changed_interviews(old, new) == {3}
-    assert changed_interviews(old, new[new.CASEID != 1]) == {1, 3}
+    ids = old.CASEID.tolist()
+    new.loc[new.index[0], 'NUMADT'] = pd.NA                              # nullable Int8: a value becomes missing
+    new.loc[new.index[1], 'POLAFF'] = np.nan                             # categorical
+    new.loc[new.index[2], 'AGE'] = 30 if old.AGE.iloc[2] != 30 else 31
+    assert changed_interviews(old, new) == set(ids[:3])
+    assert changed_interviews(new, old) == set(ids[:3])                 # and missing becomes a value
+    assert changed_interviews(old, new.iloc[:3]) == set(ids[:3])        # an interview in only one table does not count
