@@ -32,12 +32,12 @@ of `prereg/mvp-twin`.
 
 ## 4. Forecast task
 
-A forecast of month t is made on the day before month t's interview window opens. It uses the state variables as
-published that day, the answers of every month up to month t − h and, although they are not yet public, the attributes
-of month t's respondents. Forecasts are therefore conditional on the realized sample: they measure how that month's
-respondents answer, not a forecast publishable before fieldwork. The horizon h is the number of months from the latest
-available answers to month t. When the survey publishes on schedule, month t − 2 is the latest month whose final shares
-and microdata are public on that day, so h = 2 is the operating point.
+A forecast of month t is made on its forecast date, the day before month t's interview window opens, at a horizon h:
+the latest answers it may use are those of month t − h. It uses the state variables as published on the forecast date,
+the answers of every month up to month t − h and, although they are not yet public, the attributes of month t's
+respondents. Forecasts are therefore conditional on the realized sample: they measure how that month's respondents
+answer, not a forecast publishable before fieldwork. When the survey publishes on schedule, month t − 2 is the latest
+month whose final shares and microdata are public on the forecast date, so h = 2 is the operating point.
 
 A forecast's predicted shares for an item are its predicted probabilities averaged over the month's web respondents
 who answered the item, weighted by `WT`. The actual shares are the weighted shares of their answers. The loss of a
@@ -91,14 +91,15 @@ listed, then by their remaining setting as listed.
    less, for a half-life in {none, 12, 36}. Its penalty is tuned by notebook 04's month-blocked cross-validation on the
    decayed weights.
 5. **Gradient boosting** (12): the boosting of notebooks 03 and 04 on each input set, with the same half-lives. Its
-   settings are tuned by notebook 03's month-blocked cross-validation on the decayed weights at every third data end and
-   kept in between.
+   settings are tuned by notebook 03's month-blocked cross-validation on the decayed weights at April 2024 and every
+   third data end after it. At the data ends in between, the model is refitted with the latest tuned settings.
 6. **Two-stage ridge** (26), on each input set:
    - **Stage 1** is a multinomial logit with unpenalized intercepts for each month, which are the month's level, an
      unpenalized web indicator, and ridge-penalized coefficients on the 11 respondent attributes and, on input sets
      with P, the four party × president products. The month intercepts absorb the state variables, which enter only
-     in stage 2. The penalty is tuned by 5-fold cross-validation over interviews, so that every month appears in every
-     fold.
+     in stage 2. Because the web indicator is in the model, each month's level is net of mode. The mode effect is
+     assumed constant and is identified from April to June 2024, the months with both phone and web interviews. The
+     penalty is tuned by 5-fold cross-validation over interviews, so that every month appears in every fold.
    - **Stage 2** forecasts the month's level in one of three ways: exponential smoothing over the levels of web
      months, with the α grid of candidate 3; or, on input sets with M or P, a ridge regression of every month's level
      on the input set's state variables; or, on the same input sets, the level at month e plus the change predicted by
@@ -110,16 +111,20 @@ listed, then by their remaining setting as listed.
 
 ## 7. Primary test
 
-- **Estimate:** d̄, the mean of d_t(2) over the 26 target months, which estimates the expected difference E[d_t(2)].
+- **Estimate:** d̄, the mean of d_t(2) over the T = 26 target months, which estimates the expected difference
+  E[d_t(2)].
 - **Test:** the Diebold–Mariano statistic, d̄ divided by its standard error, with the long-run variance of d_t(2)
-  estimated by the Daniell-kernel average of its periodogram over the m = ⌊T^(1/3)⌋ = 2 lowest Fourier frequencies, and
-  compared with a t-distribution with 2m = 4 degrees of freedom (fixed-m asymptotics; Coroneo and Iacone, 2020, Journal
-  of Applied Econometrics 35(4)). The test is two-sided at 5%, with critical value 2.78.
+  estimated by the Daniell-kernel average of its periodogram over the ⌊T^(1/3)⌋ = 2 lowest Fourier frequencies, and
+  compared with a t-distribution with twice that many, 4, degrees of freedom (fixed-m asymptotics; Coroneo and Iacone,
+  2020, Journal of Applied Econometrics 35(4)). The test is two-sided at 5%, with critical value 2.78.
 - **Outcome:** the twins are more accurate if p < 0.05 and d̄ > 0, the simple models are more accurate if p < 0.05 and
   d̄ < 0, and neither is shown more accurate otherwise.
-- **Interval:** d̄ ± 2.78 × its standard error, the 95% interval of the same test, reported in loss units and as a
-  percentage of the simple pick's mean loss.
-- **Subperiods:** d̄ and its interval, computed as above with m = ⌊T^(1/3)⌋ for each period's T, are also reported for
+- **Interval:** d̄ ± 2.78 × its standard error, the 95% interval of the same test. It is reported in loss units and as
+  a share of the simple pick's avoidable loss: d̄ and both ends of the interval divided by the simple pick's mean loss
+  minus the mean noise floor. A month's noise floor is the expected loss of a forecast equal to the population's
+  shares, estimated for each item and answer as the variance of the weighted share, Σ w_i² (y_i − ŝ)² / (Σ w_i)², and
+  averaged over items as the loss is.
+- **Subperiods:** d̄ and its interval, computed as above with T the period's number of months, are also reported for
   August 2024 to February 2026, the 19 months known before registration, and for March to September 2026, the 7 unseen
   months. They carry no decision rule.
 
