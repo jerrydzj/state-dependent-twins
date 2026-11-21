@@ -1,9 +1,9 @@
 """Pilot checks of the GPU and CPU machines before the realtime-benchmark tag. Each takes under five minutes, and none
 forecasts a month after July 2024.
 
-    .venv/bin/python scripts/pilot.py twins /tmp/twin-pilot/<date>-pilot    # GPU: compare with the 2026-11-05 run
-    .venv/bin/python scripts/pilot.py timing --workers 32                    # CPU: time one fold of each heavy fit
-    .venv/bin/python scripts/pilot.py realtime --workers 32                  # CPU: the realtime run on small grids
+    python -m sdt.realtime.pilot twins /tmp/twin-pilot/<date>-pilot     # GPU: compare with the 2026-11-05 run
+    python -m sdt.realtime.pilot timing --workers 32                     # CPU: time one fold of each heavy fit
+    python -m sdt.realtime.pilot realtime --workers 32                   # CPU: the realtime run on small grids
 
 `twins` checks that a pilot twin run (sdt.twin.run with --limit) reproduces the 2026-11-05 run's probabilities on the
 prompts both ran. `timing` runs one cross-validation fold of boosting, the one-stage ridge and stage 1 at data end
