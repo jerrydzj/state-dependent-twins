@@ -17,10 +17,10 @@ uv venv --python 3.14 .venv
 uv pip install --python .venv/bin/python -e '.[twin,dev]'
 
 .venv/bin/python -c 'import torch; assert torch.cuda.is_available(), "no CUDA GPU"; print(torch.cuda.get_device_name(0))'
-.venv/bin/python -m sdt.mvp.clean
+.venv/bin/python -m sdt.data.clean
 .venv/bin/python -c '
 from huggingface_hub import snapshot_download
-from sdt.mvp.twin import MODELS
+from sdt.twin.readout import MODELS
 name = "meta-llama/Llama-3.1-8B-Instruct"
 print(snapshot_download(name, revision=MODELS[name], allow_patterns=["*.json", "*.safetensors"]))'
 .venv/bin/python -m pytest -q

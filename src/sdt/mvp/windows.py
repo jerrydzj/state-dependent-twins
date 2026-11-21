@@ -1,7 +1,7 @@
-"""Training and evaluation windows, rules W1-W3 in notebooks/02_mvp_plan.ipynb."""
+"""The mvp-twin study's training and evaluation windows, rules W1-W3 in notebooks/02_mvp_plan.ipynb."""
 import pandas as pd
 
-from sdt.mvp.clean import FIRST_MONTH
+from sdt.data.clean import FIRST_MONTH
 
 HORIZON = pd.Timestamp('2024-07-23')    # Llama 3.1 release, the twin's knowledge horizon
 TRAIN_START = FIRST_MONTH               # W1

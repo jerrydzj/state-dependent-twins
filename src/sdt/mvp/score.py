@@ -13,7 +13,8 @@ import numpy as np
 import pandas as pd
 from sklearn.base import clone
 
-from sdt.mvp.clean import CLASSES, OUTCOMES
+from sdt.data.clean import CLASSES, OUTCOMES
+from sdt.features import item_data
 from sdt.mvp.windows import EVAL_START, split
 
 # Evaluation periods by first survey month; each starts with the first interview window that contains its event
@@ -75,12 +76,6 @@ def noise_floor(y, w, month, n_boot=200, seed=0):
 def skill(score, baseline_score):
     """1 - score / baseline score: 0 matches the baseline, above 0 beats it, 1 would be perfect."""
     return 1 - score / baseline_score
-
-
-def item_data(df, item, encode):
-    """Features, outcome and weight for the rows that answered `item` (DK/NA are dropped per item)."""
-    d = df[df[item].notna()]
-    return encode(d), d[item].astype(str), d.WT
 
 
 def predict(model, X):

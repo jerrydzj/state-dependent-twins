@@ -1,6 +1,6 @@
 """Download every published version of the state-variable series from ALFRED, FRED's archive of past releases.
 
-    python -m sdt.alfred        # writes data/external/alfred/<SERIES>.csv
+    python -m sdt.data.alfred   # writes data/external/alfred/<SERIES>.csv
 
 Each row is one value of one observation over the period it was the published value: `date` is the observation
 (month, quarter or day), and `realtime_start` to `realtime_end` are the first and last days that value was current.

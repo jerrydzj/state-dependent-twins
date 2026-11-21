@@ -1,4 +1,4 @@
-"""Month-blocked cross-validation of gradient boosting and the ridge logit inside the training window.
+"""Month-blocked cross-validation of gradient boosting and the ridge logit on a training table.
 
 Whole months are assigned to N_FOLDS folds, so no month is split between fitting and validation (once state variables
 are added, a model can't memorise a held-out month). Phone-only and web months are shuffled separately and dealt round
@@ -9,10 +9,9 @@ the chosen setting minimises weighted log loss averaged over the folds.
 import numpy as np
 import pandas as pd
 
-from sdt.mvp.clean import CLASSES
-from sdt.mvp.encode import gb_features
-from sdt.mvp.models import Ridge, gb
-from sdt.mvp.score import item_data
+from sdt.data.clean import CLASSES
+from sdt.features import gb_features, item_data
+from sdt.models import Ridge, gb
 
 GRID = [{'max_leaf_nodes': leaves, 'min_samples_leaf': rows} for leaves in (4, 8, 16) for rows in (50, 200, 800)]
 MAX_TREES = 1000

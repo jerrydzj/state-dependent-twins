@@ -1,22 +1,19 @@
-"""Twin prompts for the MVP: what the twin is told about one interview and one item, as chat messages.
+"""Twin prompts: what the twin is told about one interview and one item, as chat messages.
 
 The system message introduces the survey, gives the state variables of the feature set (none for `demographics`) and
 describes the respondent. The user message is the item's question and answer options, worded as in the 2024 web
 questionnaire. Each item gets its own prompt, so no answer depends on another. Options are numbered 1 to k in the web
 form's order, and OPTIONS maps each number back to a clean class. A missing attribute is left out of the description.
 No prompt contains a date, a name or a survey month. Putting the messages into a model's chat format is done in
-twin.py.
+readout.py.
 
 The question wording is used under the questionnaire's CC-BY-NC-ND licence: Surveys of Consumers, Survey Research
 Center, University of Michigan. Copyright © 1946-2026 The Regents of the University of Michigan.
 """
 import pandas as pd
 
-from sdt.mvp import encode
-from sdt.mvp.state import MACRO, POLITICS, VARIABLES
-
-FEATURE_SETS = {'demographics': [], 'demographics_macro': MACRO, 'demographics_politics': POLITICS,
-                'demographics_macro_politics': VARIABLES}
+from sdt.data.state import MACRO, POLITICS
+from sdt.features import FEATURE_SETS, state_table
 
 INTRO = """You are an adult in the United States taking part in an online survey about the economy.
 
@@ -81,6 +78,7 @@ QUESTIONS = {
             [('fav', 'Good time to buy major household items'), ('unf', 'Bad time to buy major household items')]),
 }
 OPTIONS = {item: [c for c, _ in options] for item, (_, options) in QUESTIONS.items()}   # option k + 1 -> class
+RAW = ['p1', 'p2', 'p3']           # column of the raw probability of option number 1, 2 and 3 (readout.option_probs)
 ANSWER = 'Answer with the number of your choice only.'
 
 
@@ -124,7 +122,7 @@ def messages(df, feature_set, item, scenario=None):
     """One chat (system and user message) per interview of the clean table `df`, indexed like it. `scenario`, if
     given, is a function that changes the state table (one row per survey month) before the prompts are written: a
     counterfactual."""
-    S = encode.state_table(tuple(sorted(df.YYYYMM.unique())))
+    S = state_table(tuple(sorted(df.YYYYMM.unique())))
     if scenario is not None:
         S = scenario(S)
     user = user_message(item)

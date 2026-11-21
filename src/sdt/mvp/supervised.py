@@ -1,7 +1,7 @@
-"""Run the MVP supervised models on every feature set and save the results to a new folder
+"""Run the mvp-twin study's supervised models on every feature set and save the results to a new folder
 experiments/mvp/<date>-<description>/, where the description says what the run contains.
 
-    python -m sdt.mvp.run supervised-macro-politics-ridge
+    python -m sdt.mvp.supervised supervised-macro-politics-ridge
 
 For each feature set, tunes the ridge logit and gradient boosting, then fits the multinomial logit, the ridge logit and
 gradient boosting per item on the training window; the baseline shares are fitted once. Models are named
@@ -19,9 +19,7 @@ levels. Writes:
 - predictions.parquet: every model's probabilities for every evaluation interview (not in git: a derivative of the
   microdata).
 """
-import hashlib
 import json
-import subprocess
 import sys
 import time
 from importlib.metadata import version
@@ -29,27 +27,21 @@ from importlib.metadata import version
 import numpy as np
 import pandas as pd
 
-from sdt.mvp import encode
-from sdt.mvp import tune as tuning
-from sdt.mvp.clean import OUT_PATH, OUTCOMES
-from sdt.mvp.models import BaselineShares, Ridge, gb, mnl
+from sdt import tune as tuning
+from sdt.data.clean import OUT_PATH, OUTCOMES
+from sdt.experiment import git, require_clean_tree, sha256
+from sdt.features import ENCODERS, mnl_features
+from sdt.models import BaselineShares, Ridge, gb, mnl
+from sdt.mvp import EXPERIMENTS
 from sdt.mvp.score import benchmarks, bootstrap, cells, draw_counts, fit_predict, score_predictions, skill
 from sdt.mvp.windows import split
-from sdt.paths import RAW_CSV, ROOT
+from sdt.paths import RAW_CSV
 
-EXPERIMENTS = ROOT / 'experiments' / 'mvp'
-FEATURE_SETS = {'demographics': {'mnl': encode.mnl_features, 'gb': encode.gb_features}} | {   # encoder per family
-    fs: {'mnl': getattr(encode, f'mnl_{fs}_features'), 'gb': getattr(encode, f'gb_{fs}_features')}
-    for fs in ['demographics_macro', 'demographics_politics', 'demographics_macro_politics']}
 FAMILIES = ['mnl', 'ridge', 'gb']
 # Differences a - b with paired intervals: ridge vs MNL and MNL vs GB within each feature set, and what each set adds
 # to demographics within each family
-PAIRS = ([(f'ridge_{fs}', f'mnl_{fs}') for fs in FEATURE_SETS] + [(f'mnl_{fs}', f'gb_{fs}') for fs in FEATURE_SETS]
-         + [(f'{family}_{fs}', f'{family}_demographics') for fs in list(FEATURE_SETS)[1:] for family in FAMILIES])
-
-
-def git(*args):
-    return subprocess.run(['git', *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+PAIRS = ([(f'ridge_{fs}', f'mnl_{fs}') for fs in ENCODERS] + [(f'mnl_{fs}', f'gb_{fs}') for fs in ENCODERS]
+         + [(f'{family}_{fs}', f'{family}_demographics') for fs in list(ENCODERS)[1:] for family in FAMILIES])
 
 
 def score_run(pred, df, pairs=PAIRS, draws=None):
@@ -84,11 +76,6 @@ def score_cell(pred, df, pairs=PAIRS, draws=None):
     return scores.merge(bootstrap(pred, df, pairs=pairs, draws=draws), on=['item', 'model'], how='left')
 
 
-def require_clean_tree():
-    if git('status', '--porcelain', '--untracked-files=no'):
-        raise RuntimeError('commit your changes first: outputs must trace back to a commit')
-
-
 def run(description):
     """Fit, predict and score every feature set into experiments/mvp/<today>-<description>/, which must not exist."""
     start = time.time()
@@ -99,8 +86,8 @@ def run(description):
     df = pd.read_parquet(OUT_PATH)
     train, _ = split(df)
 
-    settings, ridge_settings, models = {}, {}, {'baseline': (BaselineShares(), encode.mnl_features)}
-    for fs, enc in FEATURE_SETS.items():
+    settings, ridge_settings, models = {}, {}, {'baseline': (BaselineShares(), mnl_features)}
+    for fs, enc in ENCODERS.items():
         settings[fs], ridge_settings[fs] = {}, {}
         for item in OUTCOMES:
             C, loss = tuning.tune_ridge(train, item, enc['mnl'])
@@ -122,11 +109,11 @@ def run(description):
     json.dump(ridge_settings, open(out / 'ridge_settings.json', 'w'), indent=1)
     pred.to_parquet(out / 'predictions.parquet', index=False)
     json.dump({'name': name, 'commit': git('rev-parse', 'HEAD'),
-               'data_csv_sha256': hashlib.sha256(RAW_CSV.read_bytes()).hexdigest(),
+               'data_csv_sha256': sha256(RAW_CSV),
                'date': time.strftime('%Y-%m-%d'), 'runtime_seconds': round(time.time() - start),
                'python': sys.version.split()[0],
                'packages': {p: version(p) for p in ['numpy', 'pandas', 'scikit-learn']},
-               'feature_sets': list(FEATURE_SETS), 'models': list(models), 'pairs': PAIRS,
+               'feature_sets': list(ENCODERS), 'models': list(models), 'pairs': PAIRS,
                'seeds': {'cv_months': tuning.SEED, 'gb': 0, 'noise_floor': 0, 'bootstrap': 0},
                'tuning': {'grid': tuning.GRID, 'max_trees': tuning.MAX_TREES, 'folds': tuning.N_FOLDS,
                           'ridge_C_grid': [None if np.isinf(c) else c for c in tuning.C_GRID]}},

@@ -1,18 +1,17 @@
-"""Clean the raw Surveys of Consumers file for the MVP, as described in section 1 of
-notebooks/03_mvp_first_run.ipynb.
+"""Clean the raw Surveys of Consumers file, as described in section 1 of notebooks/03_mvp_first_run.ipynb.
 
 One row per interview from FIRST_MONTH on. Outcomes are fav/mid/unf, with DK/NA as NaN (models drop them per item).
 Ordered inputs are nullable integers, unordered inputs are categoricals, and missing is NaN throughout. Encoding for
 each model family happens later, not here.
 
-    python -m sdt.mvp.clean     # writes data/processed/mvp_clean.parquet
+    python -m sdt.data.clean    # writes data/processed/clean.parquet
 """
 import pandas as pd
 
 from sdt.paths import PROCESSED, RAW_CSV
 
-FIRST_MONTH = 201702                                   # W1: first month POLAFF is asked every month
-OUT_PATH = PROCESSED / 'mvp_clean.parquet'
+FIRST_MONTH = 201702           # first month POLAFF is asked every month (rule W1 of notebook 02)
+OUT_PATH = PROCESSED / 'clean.parquet'
 
 CLASSES = ['fav', 'mid', 'unf']
 FAV3 = {1: 'fav', 3: 'mid', 5: 'unf'}

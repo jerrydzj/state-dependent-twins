@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from sdt.mvp.state import PRESIDENT, VARIABLES, WINNER, build, level, load, party, round_half_up, snapshot
+from sdt.data.state import PRESIDENT, VARIABLES, WINNER, build, level, load, party, round_half_up, snapshot
 
 T = pd.Timestamp
 

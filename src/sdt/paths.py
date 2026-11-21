@@ -5,3 +5,4 @@ ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / 'data'
 RAW_CSV = DATA / 'data.csv'
 PROCESSED = DATA / 'processed'
+EXPERIMENTS = ROOT / 'experiments'      # one folder per study, holding one folder per run

@@ -1,21 +1,22 @@
 """Score a twin run's twins against a supervised run's models on the evaluation window, run the primary test of the
 mvp-twin preregistration (primary.py), and save the results to a new folder experiments/mvp/<date>-<description>/.
 
-    python -m sdt.mvp.twin_score twin-prereg-scores     # needs the `twin` extra, for the twins' post-processing
+    python -m sdt.mvp.twin_score twin-prereg-scores
 
 Before scoring, the command checks its inputs and stops if any check fails:
 
 1. data.csv has the SHA-256 that both runs recorded.
 2. The twin run's option_probs.parquet has the SHA-256 that its run.json recorded.
-3. The twins' predictions are recomputed from those probabilities (twin_run.postprocess), and the recomputed
-   calibration matches the twin run's calibration.json.
+3. The twins' predictions are recomputed from those probabilities (twin_calibration.postprocess). If the twin run
+   wrote a calibration.json, as runs did before the twin runner stopped calibrating, the recomputed calibration
+   matches it.
 4. The supervised run's predictions reproduce the point scores of its scores.csv in every cell.
 
 The primary test and every cell use the same bootstrap draws of the evaluation window (score.draw_counts, seed 0).
 Nothing is written until every check has passed. Writes:
 
-- scores.csv: the format of sdt.mvp.run's, for the supervised run's 13 models and the 12 twins (zero-shot `twin_`,
-  shifted `twin_shift_` and scaled `twin_scale_`, on each feature set), with a row per pair in PAIRS.
+- scores.csv: the format of sdt.mvp.supervised's, for the supervised run's 13 models and the 12 twins (zero-shot
+  `twin_`, shifted `twin_shift_` and scaled `twin_scale_`, on each feature set), with a row per pair in PAIRS.
 - primary.json: the plan's twin and comparators, rho on the sample and its interval against each comparator, the
   outcome, the time sibling of rho with its interval (exploratory, primary.py), and the Spearman correlation of d_t
   with elapsed months (a diagnostic in the plan).
@@ -35,16 +36,17 @@ from importlib.metadata import version
 import numpy as np
 import pandas as pd
 
-from sdt.mvp import run as supervised_run
-from sdt.mvp import twin
-from sdt.mvp.clean import CLASSES, OUT_PATH, OUTCOMES
+from sdt.data.clean import CLASSES, OUT_PATH, OUTCOMES
+from sdt.experiment import git, in_experiments, require_clean_tree, sha256
+from sdt.features import FEATURE_SETS
+from sdt.mvp import EXPERIMENTS
 from sdt.mvp.primary import COMPARATORS, TWIN, primary_test, spearman, state_dissimilarity
-from sdt.mvp.prompts import FEATURE_SETS
-from sdt.mvp.run import EXPERIMENTS, git, require_clean_tree, score_run
 from sdt.mvp.score import cells, draw_counts
-from sdt.mvp.twin_run import CALIBRATIONS, postprocess, sha256
+from sdt.mvp.supervised import PAIRS as SUPERVISED_PAIRS, score_run
+from sdt.mvp.twin_calibration import CALIBRATIONS, postprocess
 from sdt.mvp.windows import split
 from sdt.paths import RAW_CSV
+from sdt.twin import calibration
 
 TWIN_RUN = '2026-11-05-twin-prereg-eval'
 SUPERVISED_RUN = '2026-10-26-supervised-macro-politics-ridge'
@@ -52,7 +54,7 @@ N_BOOT, SEED = 1000, 0
 TWINS = ['twin', 'twin_shift', 'twin_scale']
 # The supervised run's pairs, then each twin minus the logit on the same feature set, and what each block adds to
 # demographics for each twin
-PAIRS = (supervised_run.PAIRS + [(f'{t}_{fs}', f'mnl_{fs}') for fs in FEATURE_SETS for t in TWINS]
+PAIRS = (SUPERVISED_PAIRS + [(f'{t}_{fs}', f'mnl_{fs}') for fs in FEATURE_SETS for t in TWINS]
          + [(f'{t}_{fs}', f'{t}_demographics') for fs in list(FEATURE_SETS)[1:] for t in TWINS])
 POINT = ['log_loss', 'wasserstein', 'log_loss_skill', 'wasserstein_skill']
 
@@ -62,11 +64,12 @@ def twin_predictions(df, twins):
     meta = json.load(open(twins / 'run.json'))
     if sha256(twins / 'option_probs.parquet') != meta['option_probs_sha256']:
         raise RuntimeError(f'{twins.name}/option_probs.parquet differs from the file its run wrote')
-    pred, calibration = postprocess(pd.read_parquet(twins / 'option_probs.parquet'), df)
-    flat = lambda c: pd.json_normalize(c).iloc[0].sort_index().astype(float)
-    new, recorded = flat(calibration), flat(json.load(open(twins / 'calibration.json')))
-    if not (new.index.equals(recorded.index) and np.allclose(new, recorded, rtol=0, atol=1e-9)):
-        raise RuntimeError(f'the recomputed calibration differs from {twins.name}/calibration.json')
+    pred, fits = postprocess(pd.read_parquet(twins / 'option_probs.parquet'), df)
+    if (twins / 'calibration.json').exists():
+        flat = lambda c: pd.json_normalize(c).iloc[0].sort_index().astype(float)
+        new, recorded = flat(fits), flat(json.load(open(twins / 'calibration.json')))
+        if not (new.index.equals(recorded.index) and np.allclose(new, recorded, rtol=0, atol=1e-9)):
+            raise RuntimeError(f'the recomputed calibration differs from {twins.name}/calibration.json')
     return pred
 
 
@@ -96,7 +99,7 @@ def calibration_by_period(pred, df):
                 ids = P.index[P.index.isin(d.CASEID)]
                 a = key.loc[ids]
                 for name, scale in CALIBRATIONS.items():
-                    c = twin.fit_calibration(P.loc[ids], a[item].astype(str), a.WT, scale)
+                    c = calibration.fit_calibration(P.loc[ids], a[item].astype(str), a.WT, scale)
                     rows.append({'feature_set': fs, 'item': item, 'calibration': name, 'fitted_on': fitted_on,
                                  'interviews': len(ids), 'a': c['a'], 'b_fav': c['fav'], 'b_unf': c['unf']})
     return pd.DataFrame(rows)
@@ -137,7 +140,7 @@ def run(description, twins=TWIN_RUN, supervised=SUPERVISED_RUN, source_dir=EXPER
     """Score into out_dir/<today>-<description>/, which must not exist, from the runs `twins` and `supervised` in
     source_dir. `df` defaults to the clean table."""
     start = time.time()
-    if out_dir.resolve().is_relative_to(EXPERIMENTS.resolve()):
+    if in_experiments(out_dir):
         require_clean_tree()
     name = f"{time.strftime('%Y-%m-%d')}-{description}"
     out = out_dir / name

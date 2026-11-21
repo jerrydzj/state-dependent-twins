@@ -4,12 +4,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from sdt.mvp.clean import CLASSES, OUTCOMES, clean, load_raw
-from sdt.mvp.prompts import ATTRIBUTES, FEATURE_SETS, OPTIONS, messages, system_message, user_message
-from sdt.mvp.state import VARIABLES
-from sdt.mvp.windows import split
+from raw_rows import BASE
+from sdt.data.clean import CLASSES, OUTCOMES, clean, load_raw
+from sdt.data.state import VARIABLES
+from sdt.features import FEATURE_SETS
 from sdt.paths import RAW_CSV
-from test_clean import BASE
+from sdt.twin.prompts import ATTRIBUTES, OPTIONS, messages, system_message, user_message
 
 STATE = dict(cpi=3.0, cpi_d1y=-0.3, unrate=4.1, unrate_d1y=0.5, gdp=2.9, gdp_d1y=1.2, effr=5.33, effr_d1y=0.25,
              pres_R=0, winner_R=1)
@@ -80,8 +80,7 @@ def test_dur_has_no_middle_option():
 
 @pytest.mark.skipif(not RAW_CSV.exists(), reason='data/data.csv not downloaded')
 def test_real_data_prompts_carry_no_dates():
-    train, _ = split(clean(load_raw()))
-    df = train[train.web == 1]
+    df = clean(load_raw()).pipe(lambda d: d[(d.web == 1) & (d.YYYYMM <= 202407)])     # web interviews to July 2024
     for fs in FEATURE_SETS:
         chats = messages(df, fs, 'PAGO')
         assert chats.index.equals(df.index)
@@ -101,8 +100,7 @@ NAMES = ['Biden', 'Trump', 'Harris', 'Obama', 'Michigan', 'Surveys of Consumers'
 
 @pytest.mark.skipif(not RAW_CSV.exists(), reason='data/data.csv not downloaded')
 def test_real_data_prompts_carry_no_names():
-    train, _ = split(clean(load_raw()))
-    df = train[train.web == 1]
+    df = clean(load_raw()).pipe(lambda d: d[(d.web == 1) & (d.YYYYMM <= 202407)])     # web interviews to July 2024
     pattern = re.compile('|'.join(NAMES), re.IGNORECASE)
     for item in OUTCOMES:
         chats = messages(df, 'demographics_macro_politics', item)   # every other feature set's text is a subset

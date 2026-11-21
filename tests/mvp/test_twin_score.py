@@ -5,15 +5,16 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from sdt.mvp import run as supervised_run
-from sdt.mvp.clean import CLASSES, OUT_PATH, OUTCOMES
+from sdt.data.clean import CLASSES, OUT_PATH, OUTCOMES
+from sdt.experiment import sha256
+from sdt.features import FEATURE_SETS
 from sdt.mvp.primary import COMPARATORS, TWIN
-from sdt.mvp.prompts import FEATURE_SETS
-from sdt.mvp.twin import RAW
-from sdt.mvp.twin_run import postprocess, sha256
+from sdt.mvp.supervised import score_run
+from sdt.mvp.twin_calibration import postprocess
 from sdt.mvp.twin_score import run
 from sdt.mvp.windows import split
 from sdt.paths import RAW_CSV
+from sdt.twin.prompts import RAW
 
 
 @pytest.fixture(scope='module')
@@ -22,7 +23,7 @@ def sources(tmp_path_factory):
     interviews and 100 interviews of each evaluation month), and a twin run and a supervised run on it with random
     probabilities, laid out as the real runs are."""
     if not OUT_PATH.exists() or not RAW_CSV.exists():
-        pytest.skip('data/data.csv or data/processed/mvp_clean.parquet missing')
+        pytest.skip('data/data.csv or data/processed/clean.parquet missing')
     clean = pd.read_parquet(OUT_PATH)
     train, test = split(clean)
     sets = {'train-web': train[train.web == 1], 'eval': test.groupby('YYYYMM').head(100)}
@@ -48,7 +49,7 @@ def sources(tmp_path_factory):
         for item in OUTCOMES for a in [sets['eval'][sets['eval'][item].notna()]] for m in COMPARATORS],
         ignore_index=True)
     pred[['item', 'CASEID'] + CLASSES + ['model']].to_parquet(supervised / 'predictions.parquet', index=False)
-    supervised_run.score_run(pred, df).to_csv(supervised / 'scores.csv', index=False, float_format='%.6f')
+    score_run(pred, df).to_csv(supervised / 'scores.csv', index=False, float_format='%.6f')
     json.dump({'name': 'supervised', 'commit': 'def', 'data_csv_sha256': data_hash}, open(supervised / 'run.json', 'w'))
     return df, root
 
@@ -98,3 +99,18 @@ def test_run_stops_if_supervised_scores_do_not_reproduce(sources, tmp_path):
     with pytest.raises(RuntimeError, match='do not reproduce'):
         run('check', 'twins', 'supervised', source_dir=copy, out_dir=tmp_path / 'out', df=df)
     assert not (tmp_path / 'out').exists()
+
+
+def test_run_checks_the_calibration_only_if_the_twin_run_wrote_one(sources, tmp_path):
+    # Twin runs from sdt.twin.run write raw probabilities only, so their scores rest on the recomputed calibration
+    df, root = sources
+    copy = tmp_path / 'sources'
+    shutil.copytree(root, copy)
+    recorded = json.load(open(copy / 'twins' / 'calibration.json'))
+    recorded['scale']['demographics']['PAGO']['a'] += 0.1
+    json.dump(recorded, open(copy / 'twins' / 'calibration.json', 'w'))
+    with pytest.raises(RuntimeError, match='calibration differs'):
+        run('check', 'twins', 'supervised', source_dir=copy, out_dir=tmp_path / 'out', df=df)
+    (copy / 'twins' / 'calibration.json').unlink()
+    run('check', 'twins', 'supervised', source_dir=copy, out_dir=tmp_path / 'out', df=df)
+    assert len(list((tmp_path / 'out').iterdir())) == 1

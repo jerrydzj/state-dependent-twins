@@ -72,7 +72,8 @@ survey.
   the results. A later notebook or the preregistration replaces any earlier plan it contradicts.
 - `docs/prereg/` holds [the plan](docs/prereg/mvp-twin.md), frozen by the git tag `prereg/mvp-twin` and registered on
   OSF.
-- `src/sdt/` holds the code, and each module's docstring says how to run it.
+- `src/sdt/` holds the code: shared modules for the data, features, models and twins, and the study's own package
+  `sdt.mvp`. Each module's docstring says how to run it.
 - `experiments/` holds one folder per run, never changed afterwards. Its `run.json` records the commit, the SHA-256 of
   the microdata and the package versions, and `experiments/mvp/2026-11-05-twin-prereg-scores/` holds the scores reported
   above.
@@ -84,11 +85,11 @@ survey.
 
 1. **Download `data.csv`** into `data/` as `data/README.md` describes, and check its SHA-256 against the one there.
 2. **Install the package** with `uv venv --python 3.14 .venv` and `uv pip install -e '.[dev,twin]'`, then build the
-   clean table with `.venv/bin/python -m sdt.mvp.clean`.
-3. **Run the models:** `.venv/bin/python -m sdt.mvp.run <description>` fits the supervised models, and
-   `.venv/bin/python -m sdt.mvp.twin_run <description> --interviews train-web,eval` runs the twins. The twin run needs
-   access to Llama 3.1 on Hugging Face and took about 11 GPU-hours, and `scripts/gpu_setup.sh` prepares a GPU machine
-   for it.
+   clean table with `.venv/bin/python -m sdt.data.clean`.
+3. **Run the models:** `.venv/bin/python -m sdt.mvp.supervised <description>` fits the supervised models, and
+   `.venv/bin/python -m sdt.twin.run mvp <description> --months 202404-202407,202408-202602` runs the twins. The twin
+   run needs access to Llama 3.1 on Hugging Face and took about 11 GPU-hours, and `scripts/gpu_setup.sh` prepares a
+   GPU machine for it.
 4. **Score both runs** from Python with
    `sdt.mvp.twin_score.run('<description>', twins='<folder>', supervised='<folder>')`, naming the two folders that
    step 3 wrote in `experiments/mvp/`.

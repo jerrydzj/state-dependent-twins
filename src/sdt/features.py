@@ -1,4 +1,4 @@
-"""Turn the clean MVP table into features for each model family, as described in section 1 of
+"""Turn the clean table into features for each model family, as described in section 1 of
 notebooks/03_mvp_first_run.ipynb.
 
 Each encoder takes the output of `clean.clean` and returns one feature row per interview. Feature columns are fixed by
@@ -6,13 +6,19 @@ the spec, never inferred from the data, so training and evaluation rows always l
 (`mnl_features`, `gb_features`) use the respondent attributes. The others add state variables of `state.py` for each
 interview's survey month: the 8 macro variables (`*_demographics_macro_features`), the 2 president variables
 (`*_demographics_politics_features`), or all 10 (`*_demographics_macro_politics_features`).
+
+FEATURE_SETS names the four feature sets by the state variables they add, and ENCODERS gives each set's encoder for
+the logit family (`mnl`) and for boosting (`gb`).
 """
 from functools import cache
 
 import pandas as pd
 
-from sdt.mvp.clean import INPUTS, ORDERED, UNORDERED
-from sdt.mvp.state import MACRO, POLITICS, VARIABLES, build
+from sdt.data.clean import INPUTS, ORDERED, UNORDERED
+from sdt.data.state import MACRO, POLITICS, VARIABLES, build
+
+FEATURE_SETS = {'demographics': [], 'demographics_macro': MACRO, 'demographics_politics': POLITICS,
+                'demographics_macro_politics': VARIABLES}       # feature set -> the state variables it adds
 
 AGE_BINS, AGE_LABELS = [17, 34, 49, 64, 74, 97], ['18-34', '35-49', '50-64', '65-74', '75+']
 BUCKET = {  # ordered inputs bucketed for MNL: clean value -> level
@@ -130,3 +136,18 @@ def gb_demographics_politics_features(df):
 
 def gb_demographics_macro_politics_features(df):
     return gb_with_state(df, VARIABLES)
+
+
+ENCODERS = {
+    'demographics': {'mnl': mnl_features, 'gb': gb_features},
+    'demographics_macro': {'mnl': mnl_demographics_macro_features, 'gb': gb_demographics_macro_features},
+    'demographics_politics': {'mnl': mnl_demographics_politics_features, 'gb': gb_demographics_politics_features},
+    'demographics_macro_politics': {'mnl': mnl_demographics_macro_politics_features,
+                                    'gb': gb_demographics_macro_politics_features},
+}
+
+
+def item_data(df, item, encode):
+    """Features, outcome and weight for the rows that answered `item` (DK/NA are dropped per item)."""
+    d = df[df[item].notna()]
+    return encode(d), d[item].astype(str), d.WT

@@ -26,7 +26,7 @@ Documentation PDFs from the same site:
 - `Phone Questionnaire.pdf`, `Web Questionnaire.pdf`: the site keeps only the current version of each, with no history.
   The phone file is the 2015 core questionnaire (PDF modified 2024-02-29). The web file was created 2024-08-20; the site
   replaced it later on 2026-10-15 with a version that adds a licence page, and the twin prompts' wording
-  (`src/sdt/mvp/prompts.py`) is identical in both
+  (`src/sdt/twin/prompts.py`) is identical in both
 - `Time Series Codebook.pdf`, `Index Calculation.pdf`, `Procedure to Estimate Price Expectations.pdf`
 - `Release and Interview Dates.pdf`, `Historical Prelim:Final Release Dates.pdf`, `Data Updates and Revisions.pdf`
 - `Current versus Pre-Pandemic Long-Run Inflation Expectations.pdf`,
@@ -46,5 +46,5 @@ Copyright © 1946–2026 The Regents of the University of Michigan.
 
 | File | Built by | Contents |
 |---|---|---|
-| `mvp_clean.parquet` | `python -m sdt.mvp.clean` | MVP columns cleaned as described in section 1 of `notebooks/03_mvp_first_run.ipynb`, Feb 2017 on |
-| `mvp_state.csv` | `python -m sdt.mvp.state` | The 10 state variables per survey month, with each month's cutoff and source observations (for inspection; models call `state.build`) |
+| `clean.parquet` | `python -m sdt.data.clean` | The columns the studies use, cleaned as described in section 1 of `notebooks/03_mvp_first_run.ipynb`, Feb 2017 on |
+| `state.csv` | `python -m sdt.data.state` | The 10 state variables per survey month, with each month's cutoff and source observations (for inspection; models call `state.build`) |

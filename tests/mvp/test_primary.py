@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from scipy.stats import spearmanr
 
-from sdt.mvp.clean import CLASSES, OUT_PATH
+from sdt.data.clean import CLASSES, OUT_PATH
 from sdt.mvp.primary import dissimilarity, outcome, primary_test, spearman, state_dissimilarity
 from sdt.mvp.score import score_predictions
 
@@ -95,7 +95,7 @@ def test_models_must_predict_the_same_interviews():
         primary_test(pred, df, d, twin='twin', comparators=['mnl', 'baseline'], n_boot=20)
 
 
-@pytest.mark.skipif(not OUT_PATH.exists(), reason='data/processed/mvp_clean.parquet not built')
+@pytest.mark.skipif(not OUT_PATH.exists(), reason='data/processed/clean.parquet not built')
 def test_dissimilarity_of_the_evaluation_window_peaks_at_the_flip():
     # The plan states that d_t peaks in December 2024 and January 2025
     d = state_dissimilarity(pd.read_parquet(OUT_PATH, columns=['YYYYMM']))

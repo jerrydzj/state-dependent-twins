@@ -3,14 +3,14 @@ import pandas as pd
 import pytest
 from sklearn.ensemble import HistGradientBoostingClassifier
 
-from sdt.mvp.clean import clean, load_raw
-from sdt.mvp import encode
-from sdt.mvp.encode import (MNL_LEVELS, NEVER_MISSING, PARTY_X_PRESIDENT, gb_demographics_macro_politics_features,
-                             gb_features, mnl_demographics_macro_politics_features, mnl_features)
-from sdt.mvp.state import MACRO, POLITICS, VARIABLES
-from sdt.mvp.windows import split
+from raw_rows import BASE
+from sdt import features
+from sdt.data.clean import clean, load_raw
+from sdt.data.state import MACRO, POLITICS, VARIABLES
+from sdt.features import (ENCODERS, FEATURE_SETS, MNL_LEVELS, NEVER_MISSING, PARTY_X_PRESIDENT,
+                          gb_demographics_macro_politics_features, gb_features,
+                          mnl_demographics_macro_politics_features, mnl_features)
 from sdt.paths import RAW_CSV
-from test_clean import BASE
 
 MNL_COLUMNS = sum(len(lv) - 1 + (c not in NEVER_MISSING) for c, (lv, _) in MNL_LEVELS.items()) + 2  # + INVEST, web
 
@@ -74,21 +74,29 @@ def test_macro_and_politics_sets_split_the_state():
     df = rows({'YYYYMM': 202412, 'POLAFF': 1}, {'YYYYMM': 202502, 'POLAFF': 2})
     base, full = mnl_features(df).columns.tolist(), mnl_demographics_macro_politics_features(df)
     inter = [f'POLAFF={p}:{s}' for p, s in PARTY_X_PRESIDENT]
-    macro, politics = encode.mnl_demographics_macro_features(df), encode.mnl_demographics_politics_features(df)
+    macro, politics = features.mnl_demographics_macro_features(df), features.mnl_demographics_politics_features(df)
     assert macro.columns.tolist() == base + MACRO                                      # no party interactions
     assert politics.columns.tolist() == base + POLITICS + inter
     assert macro.equals(full[macro.columns]) and politics.equals(full[politics.columns])
     gb_base = gb_features(df).columns.tolist()
-    assert encode.gb_demographics_macro_features(df).columns.tolist() == gb_base + MACRO
-    assert encode.gb_demographics_politics_features(df).columns.tolist() == gb_base + POLITICS
+    assert features.gb_demographics_macro_features(df).columns.tolist() == gb_base + MACRO
+    assert features.gb_demographics_politics_features(df).columns.tolist() == gb_base + POLITICS
 
 
 @pytest.mark.skipif(not RAW_CSV.exists(), reason='data/data.csv not downloaded')
 def test_real_data_state_design_has_full_rank():
-    # The logit is unpenalised, so every column must be identified from the training rows of every item
-    train, _ = split(clean(load_raw()))
+    # The logit is unpenalised, so every column must be identified from the training rows of every item (to July 2024)
+    df = clean(load_raw())
+    train = df[df.YYYYMM <= 202407]
     for item in ['PAGO', 'PEXP', 'BUS12', 'BUS5', 'DUR']:
-        for enc in [encode.mnl_demographics_macro_features, encode.mnl_demographics_politics_features,
+        for enc in [features.mnl_demographics_macro_features, features.mnl_demographics_politics_features,
                     mnl_demographics_macro_politics_features]:
             X = enc(train[train[item].notna()])
             assert np.linalg.matrix_rank(np.column_stack([np.ones(len(X)), X.values])) == X.shape[1] + 1, (item, enc)
+
+
+def test_every_feature_set_has_both_encoders():
+    assert list(ENCODERS) == list(FEATURE_SETS) and all(set(e) == {'mnl', 'gb'} for e in ENCODERS.values())
+    df = rows({}, {'YYYYMM': 202407})
+    for fs, columns in FEATURE_SETS.items():
+        assert all(set(columns) <= set(encode(df).columns) for encode in ENCODERS[fs].values())

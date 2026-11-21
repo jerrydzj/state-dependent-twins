@@ -1,6 +1,6 @@
-"""State variables for the MVP: the economy and the presidency as they stood when each interview window opened.
+"""State variables: the economy and the presidency as they stood when each interview window opened.
 
-    python -m sdt.mvp.state     # writes data/processed/mvp_state.csv for inspection
+    python -m sdt.data.state    # writes data/processed/state.csv for inspection
 
 For each survey month and each series in data/external/alfred/:
 
@@ -22,7 +22,7 @@ from sdt.paths import DATA, PROCESSED
 
 ALFRED = DATA / 'external' / 'alfred'
 WINDOWS = DATA / 'external' / 'sca' / 'interview_windows.csv'
-OUT_PATH = PROCESSED / 'mvp_state.csv'
+OUT_PATH = PROCESSED / 'state.csv'
 PULLED = pd.Timestamp('2026-10-26')     # ALFRED pull date: a later cutoff could miss versions published after it
 YEAR = pd.DateOffset(years=1)
 
@@ -107,7 +107,7 @@ def build(months):
 
 
 if __name__ == '__main__':
-    from sdt.mvp.clean import OUT_PATH as CLEAN_PATH
+    from sdt.data.clean import OUT_PATH as CLEAN_PATH
     months = pd.read_parquet(CLEAN_PATH, columns=['YYYYMM']).YYYYMM.unique()
     state = build(months)
     PROCESSED.mkdir(parents=True, exist_ok=True)

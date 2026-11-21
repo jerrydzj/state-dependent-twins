@@ -25,8 +25,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import rankdata
 
-from sdt.mvp import encode
-from sdt.mvp.clean import CLASSES
+from sdt.data.clean import CLASSES
+from sdt.features import state_table
 from sdt.mvp.score import class_index, draw_counts, wasserstein
 from sdt.mvp.windows import split
 
@@ -46,7 +46,7 @@ def dissimilarity(train, evaluation):
 
 def state_dissimilarity(df):
     """d_t for the evaluation months of the clean table `df`, from the 10 state variables of state.py."""
-    S = encode.state_table(tuple(sorted(df.YYYYMM.unique())))
+    S = state_table(tuple(sorted(df.YYYYMM.unique())))
     train, test = split(df)
     return dissimilarity(S.loc[sorted(train.YYYYMM.unique())], S.loc[sorted(test.YYYYMM.unique())])
 

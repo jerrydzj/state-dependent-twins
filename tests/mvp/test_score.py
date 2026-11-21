@@ -2,14 +2,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from sdt.mvp.clean import CLASSES, clean, load_raw
-from sdt.mvp.encode import mnl_features
-from sdt.mvp.models import BaselineShares, mnl
+from sdt.data.clean import CLASSES, OUT_PATH, clean, load_raw
+from sdt.features import mnl_features
+from sdt.models import BaselineShares, mnl
+from sdt.mvp import EXPERIMENTS
 from sdt.mvp.score import (GROUPS, PERIODS, bootstrap, cells, class_index, distribution_score, draw_counts, evaluate,
                            log_loss, noise_floor, predict, score_predictions, skill, wasserstein)
 from sdt.mvp.windows import EVAL_START, HORIZON, TRAIN_END, split
-from sdt.mvp.clean import OUT_PATH
-from sdt.paths import DATA, RAW_CSV, ROOT
+from sdt.paths import DATA, RAW_CSV
 
 
 def test_log_loss_by_hand():
@@ -162,7 +162,7 @@ def test_cells_partition_the_evaluation_window():
     assert sum(len(out['all', g]) for g in GROUPS) == out['all', 'all'].POLAFF.notna().sum()   # non-reporters: 'all' only
 
 
-FIRST_RUN = ROOT / 'experiments' / 'mvp' / '2026-10-22-supervised-demographics'
+FIRST_RUN = EXPERIMENTS / '2026-10-22-supervised-demographics'
 
 
 @pytest.mark.skipif(not (FIRST_RUN / 'predictions.parquet').exists() or not OUT_PATH.exists(),
@@ -170,7 +170,7 @@ FIRST_RUN = ROOT / 'experiments' / 'mvp' / '2026-10-22-supervised-demographics'
 def test_all_cell_reproduces_first_run_point_scores():
     # The 'all'/'all' cell must give the point scores reported in notebook 03, which predate the cells. Its intervals
     # came from separate draws per item, so they are not compared
-    from sdt.mvp.run import score_cell
+    from sdt.mvp.supervised import score_cell
     run = FIRST_RUN
     df = pd.read_parquet(OUT_PATH)
     _, _, d = next(cells(df))
@@ -185,7 +185,7 @@ def test_all_cell_reproduces_first_run_point_scores():
 
 
 def test_score_cell_differences_follow_pairs():
-    from sdt.mvp.run import score_cell
+    from sdt.mvp.supervised import score_cell
     rng = np.random.default_rng(0)
     n = 300
     df = pd.DataFrame({'CASEID': range(n), 'YYYYMM': rng.choice([202408, 202409], n), 'WT': rng.uniform(0.5, 1.5, n),

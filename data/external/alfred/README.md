@@ -1,7 +1,7 @@
 # ALFRED real-time series (pulled 2026-10-26)
 
 Every published version of the four series behind the state variables, downloaded from ALFRED (FRED's archive of past
-releases) through the FRED API with `python -m sdt.alfred`. Observations start in January 2014; versions run from
+releases) through the FRED API with `python -m sdt.data.alfred`. Observations start in January 2014; versions run from
 each observation's first publication to the pull date.
 
 | File | Series | Source | Frequency | Observations | Rows |

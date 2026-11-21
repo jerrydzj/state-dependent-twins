@@ -2,11 +2,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from sdt.mvp.clean import CLASSES
-from sdt.mvp.encode import mnl_features
-from sdt.mvp.models import Ridge, gb, mnl
-from sdt.mvp.tune import N_FOLDS, folds, month_folds, tune, tune_ridge
-from sdt.mvp.windows import TRAIN_END
+from sdt.data.clean import CLASSES
+from sdt.features import mnl_features
+from sdt.models import Ridge, gb, mnl
+from sdt.tune import N_FOLDS, folds, month_folds, tune, tune_ridge
+
+TRAIN_END = 202407
 
 
 def fake_train(months, n=60, seed=0):
