@@ -159,7 +159,7 @@ def run(description, twins=TWIN_RUN, supervised=SUPERVISED_RUN, source_dir=EXPER
     json.dump({'name': name, 'commit': git('rev-parse', 'HEAD'), 'data_csv_sha256': res['data_hash'],
                'date': time.strftime('%Y-%m-%d'), 'runtime_seconds': round(time.time() - start),
                'python': sys.version.split()[0],
-               'packages': {p: version(p) for p in ['numpy', 'pandas', 'scipy', 'scikit-learn', 'torch']},
+               'packages': {p: version(p) for p in ['numpy', 'pandas', 'scipy', 'scikit-learn']},
                'sources': {'twins': {k: sources['twins'][k] for k in ['name', 'commit', 'option_probs_sha256']},
                            'supervised': {k: sources['supervised'][k] for k in ['name', 'commit']}},
                'bootstrap': {'draws': N_BOOT, 'seed': SEED}, 'pairs': PAIRS},
