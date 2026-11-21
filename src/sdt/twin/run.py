@@ -1,6 +1,6 @@
 """Run the twins and save their raw option probabilities to a new folder experiments/<study>/<date>-<description>/.
 
-    python -m sdt.twin.run realtime twin-web --months 202404-202407,202408-202609
+    python -m sdt.twin.run realtime twin-web --months 202404-202407,202408-202602,202603-202609
     python -m sdt.twin.run mvp twin-pilot --months 202404-202407 --stages base,counterfactual,rerun,bf16 --batch-size 64
     python -m sdt.twin.run mvp speed-test --benchmark          # prompts per second and GPU memory per batch size
     python -m sdt.twin.run realtime <folder name> --resume ...  # continue an interrupted run at the same commit
@@ -11,7 +11,9 @@ interviews without an answer are left out only when scoring.
 
 Blocks: `--months` lists blocks of survey months, each written FIRST-LAST. A block holds the web interviews of its
 months, in the clean table's order, and is named by its months. Prompts are batched within a block, so two runs with
-the same blocks put every prompt in the same batch.
+the same blocks, the same rows of the clean table and the same --batch-size put every prompt in the same batch. To
+batch earlier months as an earlier run did, give them the earlier run's blocks and put later months in a block of
+their own: a block that also held later months would fill the last batch of the earlier months.
 
 Stages, in this order:
 
