@@ -15,6 +15,9 @@ export PATH="$HOME/.local/bin:$PATH"
 uv venv --python 3.14 .venv
 uv pip install --python .venv/bin/python -e '.[dev]'
 
-.venv/bin/python -c 'import os; print(len(os.sched_getaffinity(0)), "CPUs available")'
 .venv/bin/python -m sdt.data.clean
-.venv/bin/python -m pytest -q
+# Cap the numerical libraries' threads at this machine's CPUs: a container often shows every core of its host, and
+# threads far beyond the CPUs it may use make the tests run many times slower
+CPUS=$(.venv/bin/python -c 'from sdt.experiment import available_cpus; print(available_cpus())')
+echo "$CPUS CPUs available"
+OMP_NUM_THREADS=$CPUS OPENBLAS_NUM_THREADS=$CPUS MKL_NUM_THREADS=$CPUS .venv/bin/python -m pytest -q

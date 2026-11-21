@@ -23,4 +23,8 @@ from huggingface_hub import snapshot_download
 from sdt.twin.readout import MODELS
 name = "meta-llama/Llama-3.1-8B-Instruct"
 print(snapshot_download(name, revision=MODELS[name], allow_patterns=["*.json", "*.safetensors"]))'
-.venv/bin/python -m pytest -q
+# Cap the numerical libraries' threads at this machine's CPUs: a container often shows every core of its host, and
+# threads far beyond the CPUs it may use make the tests run many times slower
+CPUS=$(.venv/bin/python -c 'from sdt.experiment import available_cpus; print(available_cpus())')
+echo "$CPUS CPUs available"
+OMP_NUM_THREADS=$CPUS OPENBLAS_NUM_THREADS=$CPUS MKL_NUM_THREADS=$CPUS .venv/bin/python -m pytest -q
