@@ -177,3 +177,12 @@ def test_changed_interviews_count_a_change_to_or_from_missing(to_july_2024):
     assert changed_interviews(old, new) == set(ids[:3])
     assert changed_interviews(new, old) == set(ids[:3])                 # and missing becomes a value
     assert changed_interviews(old, new.iloc[:3]) == set(ids[:3])        # an interview in only one table does not count
+
+
+def test_units_mix_their_kinds_evenly():
+    first, second = realtime.units(202609, Settings())
+    assert len(first) == 600 + 290 + 1740 + 58 and len(set(first)) == len(first) and len(second) == 1740
+    kinds = pd.Series([u[0] for u in first])
+    for part in np.array_split(kinds, 10):                           # every tenth of the queue has every heavy kind
+        assert {'gb_tuning', 'two_stage', 'ridge'} <= set(part)
+    assert {u[0] for u in second} == {'gb'}

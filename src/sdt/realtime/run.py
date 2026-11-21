@@ -166,15 +166,23 @@ def reproduction(raw, df, previous_twins=PREVIOUS_TWINS, previous_data=PREVIOUS_
 
 # ----------------------------------------------------------------------------------------------------------- units
 
+def spread(kinds):
+    """The units of every list in `kinds`, each list spread evenly over the result: unit i of a list of n takes
+    position (i + 0.5) / n, so no stretch of the queue holds one kind only."""
+    keyed = [((i + 0.5) / len(units), k, u) for k, units in enumerate(kinds) for i, u in enumerate(units)]
+    return [u for _, _, u in sorted(keyed, key=lambda x: (x[0], x[1]))]
+
+
 def units(last_month, settings):
-    """(first, second): the units that need nothing else, heaviest kinds first, and the boosting fits, which need the
-    tuning units of the first list."""
+    """(first, second): the units that need nothing else, and the boosting fits, which need the tuning units of the
+    first list. The first list mixes its kinds evenly, so the logit fits, which are limited by memory bandwidth, run
+    alongside boosting's tuning, which is limited by the cores; the order does not change any result."""
     ends = data_ends(last_month)
     grid = [(fs, h, item) for fs in FEATURE_SETS for h in settings.half_lives for item in ITEMS]
-    first = [('gb_tuning', e, *g) for e in ends if tuning_end(e) == e for g in grid]
-    first += [('two_stage', e, spec, item) for e in ends for spec in two_stage.SPECS for item in ITEMS]
-    first += [('ridge', e, *g) for e in ends for g in grid]
-    first += [(kind, e) for e in ends for kind in ['twins', 'smoothing']]
+    first = spread([[('gb_tuning', e, *g) for e in ends if tuning_end(e) == e for g in grid],
+                    [('two_stage', e, spec, item) for e in ends for spec in two_stage.SPECS for item in ITEMS],
+                    [('ridge', e, *g) for e in ends for g in grid],
+                    [(kind, e) for e in ends for kind in ['twins', 'smoothing']]])
     second = [('gb', e, *g) for e in ends for g in grid]
     return first, second
 
