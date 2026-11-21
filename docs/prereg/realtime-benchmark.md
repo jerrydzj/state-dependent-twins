@@ -116,10 +116,11 @@ listed, then by their remaining setting as listed.
 - **Test:** the Diebold–Mariano statistic, d̄ divided by its standard error, with the long-run variance of d_t(2)
   estimated by the Daniell-kernel average of its periodogram over the ⌊T^(1/3)⌋ = 2 lowest Fourier frequencies, and
   compared with a t-distribution with twice that many, 4, degrees of freedom (fixed-m asymptotics; Coroneo and Iacone,
-  2020, Journal of Applied Econometrics 35(4)). The test is two-sided at 5%, with critical value 2.78.
+  2020, Journal of Applied Econometrics 35(4)). The test is two-sided at 5%, with critical value 2.776, the 97.5th
+  percentile of that t-distribution.
 - **Outcome:** the twins are more accurate if p < 0.05 and d̄ > 0, the simple models are more accurate if p < 0.05 and
   d̄ < 0, and neither is shown more accurate otherwise.
-- **Interval:** d̄ ± 2.78 × its standard error, the 95% interval of the same test. It is reported in loss units and as
+- **Interval:** d̄ ± 2.776 × its standard error, the 95% interval of the same test. It is reported in loss units and as
   a share of the simple pick's avoidable loss: d̄ and both ends of the interval divided by the simple pick's mean loss
   minus the mean noise floor. A month's noise floor is the expected loss of a forecast equal to the population's
   shares, estimated for each item and answer as the variance of the weighted share, Σ w_i² (y_i − ŝ)² / (Σ w_i)², and
