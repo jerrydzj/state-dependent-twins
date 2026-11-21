@@ -35,3 +35,4 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["tests"]      # shared test rows (tests/raw_rows.py)
+addopts = "--import-mode=importlib"     # test files in different folders may share a name

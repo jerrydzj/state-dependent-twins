@@ -32,7 +32,7 @@ from sdt.data.clean import OUT_PATH, OUTCOMES
 from sdt.experiment import git, require_clean_tree, sha256
 from sdt.features import ENCODERS, mnl_features
 from sdt.models import BaselineShares, Ridge, gb, mnl
-from sdt.mvp import EXPERIMENTS
+from sdt.mvp import RUNS
 from sdt.mvp.score import benchmarks, bootstrap, cells, draw_counts, fit_predict, score_predictions, skill
 from sdt.mvp.windows import split
 from sdt.paths import RAW_CSV
@@ -81,12 +81,13 @@ def run(description):
     start = time.time()
     require_clean_tree()
     name = f"{time.strftime('%Y-%m-%d')}-{description}"
-    out = EXPERIMENTS / name
+    out = RUNS / name
     out.mkdir(parents=True)                             # a run never writes into an earlier run's folder
     df = pd.read_parquet(OUT_PATH)
     train, _ = split(df)
 
-    settings, ridge_settings, models = {}, {}, {'baseline': (BaselineShares(), mnl_features)}
+    # The baseline shares count only web rows, since every evaluation month is web
+    settings, ridge_settings, models = {}, {}, {'baseline': (BaselineShares(web_only=True), mnl_features)}
     for fs, enc in ENCODERS.items():
         settings[fs], ridge_settings[fs] = {}, {}
         for item in OUTCOMES:

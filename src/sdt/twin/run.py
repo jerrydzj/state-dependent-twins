@@ -2,7 +2,7 @@
 
     python -m sdt.twin.run realtime twin-web --months 202404-202407,202408-202602,202603-202609
     python -m sdt.twin.run mvp twin-pilot --months 202404-202407 --stages base,counterfactual,rerun,bf16 --batch-size 64
-    python -m sdt.twin.run mvp speed-test --benchmark          # prompts per second and GPU memory per batch size
+    python -m sdt.twin.run --benchmark                          # prompts per second and GPU memory per batch size
     python -m sdt.twin.run realtime <folder name> --resume ...  # continue an interrupted run at the same commit
 
 *Running* a prompt means the model computes its option probabilities; *scoring* compares probabilities with answers.
@@ -41,13 +41,14 @@ import json
 import sys
 import time
 from importlib.metadata import version
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import torch
 
 from sdt.data.clean import OUT_PATH, OUTCOMES
-from sdt.experiment import git, in_experiments, require_clean_tree, sha256
+from sdt.experiment import STUDIES, git, in_experiments, require_clean_tree, sha256
 from sdt.features import FEATURE_SETS
 from sdt.paths import EXPERIMENTS, RAW_CSV
 from sdt.twin import readout
@@ -55,8 +56,8 @@ from sdt.twin.prompts import RAW, messages
 
 DEFAULT_MODEL = 'meta-llama/Llama-3.1-8B-Instruct'
 STAGES = ['base', 'counterfactual', 'rerun', 'bf16']
-# Counterfactual state for every month of the first block. In April to July 2024, the president and the last
-# election's winner were both Democrats and inflation was 3.2% to 3.5%
+# Counterfactual state for every month of the first block, designed for the twin pilot's block of April to July 2024
+# (notebook 05), when the president and the last election's winner were both Democrats and inflation was 3.2% to 3.5%
 SCENARIOS = {
     'pres_R': lambda S: S.assign(pres_R=1, winner_R=1),
     'cpi_9.1': lambda S: S.assign(cpi=9.1, cpi_d1y=9.1 - (S.cpi - S.cpi_d1y)),   # year-earlier value unchanged
@@ -67,11 +68,14 @@ KEY = ['stage', 'scenario', 'interviews', 'feature_set', 'item']
 
 
 def parse_months(text):
-    """'202404-202407,202408-202609' -> [(202404, 202407), (202408, 202609)]. Raise unless the blocks are in order and
-    do not overlap."""
-    blocks = [tuple(int(m) for m in b.split('-')) for b in text.split(',')]
-    if any(len(b) != 2 or b[0] > b[1] for b in blocks):
-        raise ValueError(f'each block must be FIRST-LAST with FIRST <= LAST: {text}')
+    """'202404-202407,202408-202609' -> [(202404, 202407), (202408, 202609)]. Raise unless every month is a YYYYMM
+    month and the blocks are in order and do not overlap."""
+    try:
+        blocks = [tuple(int(m) for m in b.split('-')) for b in text.split(',')]
+    except ValueError:
+        raise ValueError(f'months must be YYYYMM numbers: {text}') from None
+    if any(len(b) != 2 or b[0] > b[1] or not all(1 <= m % 100 <= 12 for m in b) for b in blocks):
+        raise ValueError(f'each block must be FIRST-LAST, two YYYYMM months with FIRST <= LAST: {text}')
     if any(a[1] >= b[0] for a, b in zip(blocks, blocks[1:])):
         raise ValueError(f'blocks must be in order and must not overlap: {text}')
     return blocks
@@ -165,11 +169,16 @@ def run(out_dir, description, blocks, model_name=DEFAULT_MODEL, stages=('base',)
         resume=False):
     """Run the stages into out_dir/<today>-<description>/ (which must not exist), or with `resume`, continue the run in
     out_dir/<description>/. `blocks` is a list of (first, last) months. Writes every output of the module docstring."""
+    start = time.time()
     if in_experiments(out_dir):
         require_clean_tree()
+    df = pd.read_parquet(OUT_PATH)
+    sets = interview_blocks(df, blocks, limit)      # raises on an empty block, before any folder is made
     name = description if resume else f"{time.strftime('%Y-%m-%d')}-{description}"
     out = out_dir / name
     if resume:
+        if not out.exists():
+            raise FileNotFoundError(f'{out} does not exist: --resume takes the folder name of an earlier run')
         if (out / 'run.json').exists():
             raise RuntimeError(f'{name} is complete; a new run needs a new folder')
         log = out / 'chunks' / 'log.jsonl'
@@ -178,9 +187,6 @@ def run(out_dir, description, blocks, model_name=DEFAULT_MODEL, stages=('base',)
             raise RuntimeError(f'{name} was run at commit {commits}; check out that commit to resume it')
     else:
         out.mkdir(parents=True)                     # a run never writes into an earlier run's folder
-    start = time.time()
-    df = pd.read_parquet(OUT_PATH)
-    sets = interview_blocks(df, blocks, limit)
     run_stages(Runner(out, model_name, batch_size), sets, stages)
 
     raw = pd.concat([pd.read_parquet(p) for p in sorted((out / 'chunks').glob('*.parquet'))], ignore_index=True)
@@ -234,9 +240,10 @@ def benchmark(model_name, sizes=(16, 32, 64, 128), n=512):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
-    parser.add_argument('study', help='the study the run belongs to: the run goes to experiments/<study>/')
-    parser.add_argument('description', help='what the run contains; with --resume, the folder name')
+    parser.add_argument('study', nargs='?', choices=STUDIES, help='the study the run belongs to')
+    parser.add_argument('description', nargs='?', help='what the run contains; with --resume, the folder name')
     parser.add_argument('--months', help='comma-separated blocks of survey months, each FIRST-LAST')
+    parser.add_argument('--out', type=Path, help='parent folder of the run folder (default: experiments/<study>/)')
     parser.add_argument('--model', default=DEFAULT_MODEL, choices=list(readout.MODELS))
     parser.add_argument('--stages', default='base', help=f'comma-separated, from {STAGES}')
     parser.add_argument('--batch-size', type=int, default=16)
@@ -248,9 +255,13 @@ if __name__ == '__main__':
         benchmark(a.model)
     else:
         stages = a.stages.split(',')
+        if not (a.study and a.description and a.months):
+            parser.error('a run needs a study, a description and --months')
         if set(stages) - set(STAGES):
             parser.error(f'stages must be in {STAGES}')
-        if not a.months:
-            parser.error('--months is required')
-        run(EXPERIMENTS / a.study, a.description, parse_months(a.months), a.model, [s for s in STAGES if s in stages],
+        try:
+            blocks = parse_months(a.months)
+        except ValueError as e:
+            parser.error(str(e))
+        run(a.out or EXPERIMENTS / a.study, a.description, blocks, a.model, [s for s in STAGES if s in stages],
             a.batch_size, a.limit, a.resume)

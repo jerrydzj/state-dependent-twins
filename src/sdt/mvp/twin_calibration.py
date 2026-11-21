@@ -1,5 +1,7 @@
-"""The mvp-twin study's twins, from a twin run's raw option probabilities (sdt.twin.run): the zero-shot twin, and the
-shifted and scaled twins calibrated on the training window's web interviews (April to July 2024).
+"""Calibrate the mvp-twin study's twins from a twin run's raw option probabilities.
+
+The twins are the zero-shot twin of sdt.twin.run, and the shifted and scaled twins calibrated on the training window's
+web interviews (April to July 2024).
 
     python -m sdt.mvp.twin_calibration twin-pilot-calibration --from 2026-10-30-twin-pilot-training-web   # no GPU
 
@@ -28,7 +30,7 @@ import pandas as pd
 
 from sdt.data.clean import CLASSES, OUT_PATH
 from sdt.experiment import git, in_experiments, require_clean_tree, sha256
-from sdt.mvp import EXPERIMENTS
+from sdt.mvp import RUNS
 from sdt.mvp.score import log_loss
 from sdt.mvp.windows import TRAIN_END, split
 from sdt.paths import RAW_CSV
@@ -65,6 +67,8 @@ def postprocess(raw, df):
         g = answered(g, key, item)
         P = calibration.class_probs(g, item, mid_share)
         fit = in_training_window(g, key)
+        if not fit.any():
+            raise ValueError(f'{fs}, {item}: no interviews of the training window, so the twins cannot be calibrated')
         a = key.loc[g.CASEID[fit]]
         twins = {f'twin_{fs}': P}
         for name, scale in CALIBRATIONS.items():
@@ -105,7 +109,7 @@ def calibration_cv(raw, df):
     return pd.DataFrame(rows)
 
 
-def rescore(description, source, out_dir=EXPERIMENTS):
+def rescore(description, source, out_dir=RUNS):
     """Write the twins of the earlier run `source` (a folder name in out_dir) into out_dir/<today>-<description>/,
     without the model."""
     if in_experiments(out_dir):

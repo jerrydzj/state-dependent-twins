@@ -5,7 +5,7 @@ import pytest
 from sdt.data.clean import CLASSES, OUT_PATH, clean, load_raw
 from sdt.features import mnl_features
 from sdt.models import BaselineShares, mnl
-from sdt.mvp import EXPERIMENTS
+from sdt.mvp import RUNS
 from sdt.mvp.score import (GROUPS, PERIODS, bootstrap, cells, class_index, distribution_score, draw_counts, evaluate,
                            log_loss, noise_floor, predict, score_predictions, skill, wasserstein)
 from sdt.mvp.windows import EVAL_START, HORIZON, TRAIN_END, split
@@ -162,7 +162,7 @@ def test_cells_partition_the_evaluation_window():
     assert sum(len(out['all', g]) for g in GROUPS) == out['all', 'all'].POLAFF.notna().sum()   # non-reporters: 'all' only
 
 
-FIRST_RUN = EXPERIMENTS / '2026-10-22-supervised-demographics'
+FIRST_RUN = RUNS / '2026-10-22-supervised-demographics'
 
 
 @pytest.mark.skipif(not (FIRST_RUN / 'predictions.parquet').exists() or not OUT_PATH.exists(),

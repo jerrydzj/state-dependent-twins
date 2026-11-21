@@ -9,10 +9,14 @@ from sdt.experiment import sha256
 from sdt.mvp import twin_calibration
 from sdt.mvp.twin_calibration import calibration_cv, postprocess
 from sdt.twin.prompts import RAW
-from sdt.twin.run import interview_blocks
 
-TRAINING_WEB = [(202404, 202407)]
 BLOCKS = [(202404, 202407), (202408, 202602)]
+
+
+def interview_blocks(df, blocks, limit=None):
+    """The web interviews of each block of months, as sdt.twin.run selects them (that module needs PyTorch)."""
+    out = {f'{a}-{b}': df[(df.web == 1) & df.YYYYMM.between(a, b)] for a, b in blocks}
+    return {k: d.head(limit) if limit else d for k, d in out.items()}
 
 
 @pytest.fixture(scope='module')
@@ -23,7 +27,7 @@ def clean_table():
 
 
 def training_web(clean_table, per_month=None):
-    d = interview_blocks(clean_table, TRAINING_WEB)['202404-202407']
+    d = interview_blocks(clean_table, BLOCKS[:1])['202404-202407']
     return d.groupby('YYYYMM').head(per_month) if per_month else d
 
 
@@ -85,3 +89,15 @@ def test_postprocess_calibrates_on_the_training_window_only(clean_table):
     changed = raw.assign(p1=np.where(later, 0.9, raw.p1), p2=np.where(later, 0.05, raw.p2),
                          p3=np.where(later, 0.04, raw.p3))
     assert postprocess(raw, clean_table)[1] == postprocess(changed, clean_table)[1]
+
+
+def test_postprocess_ignores_how_a_run_split_its_blocks(clean_table):
+    # The training window is a range of months, so one block spanning both windows calibrates as two blocks do
+    raw = synthetic_raw(interview_blocks(clean_table, BLOCKS, limit=300))
+    assert postprocess(raw.assign(interviews='202404-202602'), clean_table)[1] == postprocess(raw, clean_table)[1]
+
+
+def test_postprocess_needs_the_training_window(clean_table):
+    raw = synthetic_raw(interview_blocks(clean_table, BLOCKS[1:], limit=300))
+    with pytest.raises(ValueError, match='no interviews of the training window'):
+        postprocess(raw, clean_table)

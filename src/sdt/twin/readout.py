@@ -16,12 +16,12 @@ For each prompt:
 This module does steps 1 to 3 and needs PyTorch. Steps 4 and 5 (`class_probs`) are in calibration.py, which does not
 need PyTorch, so twins can be calibrated and scored on a machine without it.
 
-Prompts are scored in batches. A batch pads shorter prompts on the left to a common length, and the position of each
+Prompts are run in batches. A batch pads shorter prompts on the left to a common length, and the position of each
 token is counted from its prompt's first real token, so padding cannot change a prompt's probabilities.
 
 The weights are released in bf16 and computed with in fp32. Converting bf16 to fp32 is exact, so the weights are the
 released ones. bf16 arithmetic keeps two to three significant digits, and its rounding depends on the shape of the batch:
-with the Llama 3.2 1B model, the same prompt scored alone and in a batch differed by up to 0.03 in probability in
+with the Llama 3.2 1B model, the same prompt run alone and in a batch differed by up to 0.03 in probability in
 bf16, and by 0.00001 in fp32.
 """
 import numpy as np

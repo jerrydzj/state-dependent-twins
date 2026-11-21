@@ -42,8 +42,8 @@ def gb(**params):
 
 
 class BaselineShares(ClassifierMixin, BaseEstimator):
-    """Predicts the same distribution for everyone: the weighted answer shares of the training rows. With
-    web_only=True (the mvp-twin baseline), only web rows count, since every evaluation month is web."""
+    """Predicts the same distribution for everyone: the weighted answer shares of the training rows, or with
+    web_only=True, of their web rows only."""
 
     def __init__(self, web_only=True):
         self.web_only = web_only

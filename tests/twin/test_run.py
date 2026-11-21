@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+pytest.importorskip('torch')
+
 from sdt.data.clean import OUT_PATH, OUTCOMES
 from sdt.features import FEATURE_SETS, state_table
 from sdt.twin.run import SCENARIOS, Runner, interview_blocks, parse_months, rerun_sample
@@ -22,7 +24,8 @@ def test_scenarios():
 def test_parse_months():
     assert parse_months('202404-202407,202408-202609') == [(202404, 202407), (202408, 202609)]
     assert parse_months('202404-202404') == [(202404, 202404)]
-    for bad in ['202407-202404', '202404-202408,202408-202609', '202408-202609,202404-202407', '202404']:
+    for bad in ['202407-202404', '202404-202408,202408-202609', '202408-202609,202404-202407', '202404',
+                '202404-202413', 'abc']:
         with pytest.raises(ValueError):
             parse_months(bad)
 

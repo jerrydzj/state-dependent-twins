@@ -1,5 +1,5 @@
-"""The mvp-twin study (docs/prereg/mvp-twin.md, notebooks 01 to 06): its windows, supervised run, twin calibration and
-primary test. Its runs are in experiments/mvp/."""
-from sdt.paths import EXPERIMENTS as ALL_EXPERIMENTS
+"""The mvp-twin study (docs/prereg/mvp-twin.md, notebooks 01 to 06): its windows, supervised run, twin calibration,
+scoring and primary test."""
+from sdt import paths
 
-EXPERIMENTS = ALL_EXPERIMENTS / 'mvp'
+RUNS = paths.EXPERIMENTS / 'mvp'        # one folder per run of this study

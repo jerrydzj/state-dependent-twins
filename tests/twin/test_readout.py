@@ -4,6 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
+pytest.importorskip('torch')
+
 from raw_rows import BASE
 from sdt.data.clean import clean
 from sdt.twin import readout
@@ -54,7 +56,7 @@ def small():
 
 
 def test_padding_does_not_change_probabilities(small):
-    # A short prompt scored alone and in a batch with a longer one, which pads it on the left
+    # A short prompt run alone and in a batch with a longer one, which pads it on the left
     df = clean(pd.DataFrame([BASE, {**BASE, 'AGE': float('nan'), 'SEX': float('nan'), 'MARRY': float('nan')}]))
     chats = messages(df, 'demographics', 'BUS12')
     alone = option_probs(*small, chats.iloc[[1]], 'BUS12')

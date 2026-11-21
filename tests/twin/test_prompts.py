@@ -6,7 +6,6 @@ import pytest
 
 from raw_rows import BASE
 from sdt.data.clean import CLASSES, OUTCOMES, clean, load_raw
-from sdt.data.state import VARIABLES
 from sdt.features import FEATURE_SETS
 from sdt.paths import RAW_CSV
 from sdt.twin.prompts import ATTRIBUTES, OPTIONS, messages, system_message, user_message

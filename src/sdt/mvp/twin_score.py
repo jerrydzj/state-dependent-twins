@@ -7,9 +7,9 @@ Before scoring, the command checks its inputs and stops if any check fails:
 
 1. data.csv has the SHA-256 that both runs recorded.
 2. The twin run's option_probs.parquet has the SHA-256 that its run.json recorded.
-3. The twins' predictions are recomputed from those probabilities (twin_calibration.postprocess). If the twin run
-   wrote a calibration.json, as runs did before the twin runner stopped calibrating, the recomputed calibration
-   matches it.
+3. The twins' predictions are recomputed from those probabilities (twin_calibration.postprocess). A twin run made
+   before the twin runner stopped calibrating wrote predictions.parquet and calibration.json, and the recomputed
+   calibration must match its calibration.json.
 4. The supervised run's predictions reproduce the point scores of its scores.csv in every cell.
 
 The primary test and every cell use the same bootstrap draws of the evaluation window (score.draw_counts, seed 0).
@@ -39,7 +39,7 @@ import pandas as pd
 from sdt.data.clean import CLASSES, OUT_PATH, OUTCOMES
 from sdt.experiment import git, in_experiments, require_clean_tree, sha256
 from sdt.features import FEATURE_SETS
-from sdt.mvp import EXPERIMENTS
+from sdt.mvp import RUNS
 from sdt.mvp.primary import COMPARATORS, TWIN, primary_test, spearman, state_dissimilarity
 from sdt.mvp.score import cells, draw_counts
 from sdt.mvp.supervised import PAIRS as SUPERVISED_PAIRS, score_run
@@ -65,6 +65,8 @@ def twin_predictions(df, twins):
     if sha256(twins / 'option_probs.parquet') != meta['option_probs_sha256']:
         raise RuntimeError(f'{twins.name}/option_probs.parquet differs from the file its run wrote')
     pred, fits = postprocess(pd.read_parquet(twins / 'option_probs.parquet'), df)
+    if (twins / 'predictions.parquet').exists() and not (twins / 'calibration.json').exists():
+        raise RuntimeError(f'{twins.name} wrote predictions but no calibration.json to check them against')
     if (twins / 'calibration.json').exists():
         flat = lambda c: pd.json_normalize(c).iloc[0].sort_index().astype(float)
         new, recorded = flat(fits), flat(json.load(open(twins / 'calibration.json')))
@@ -136,7 +138,7 @@ def score(df, twins, supervised):
             'calibration_by_period': calibration_by_period(twin_pred, df), 'data_hash': data_hash}
 
 
-def run(description, twins=TWIN_RUN, supervised=SUPERVISED_RUN, source_dir=EXPERIMENTS, out_dir=EXPERIMENTS, df=None):
+def run(description, twins=TWIN_RUN, supervised=SUPERVISED_RUN, source_dir=RUNS, out_dir=RUNS, df=None):
     """Score into out_dir/<today>-<description>/, which must not exist, from the runs `twins` and `supervised` in
     source_dir. `df` defaults to the clean table."""
     start = time.time()

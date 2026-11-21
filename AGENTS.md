@@ -69,14 +69,16 @@ A notebook is read once, top to bottom, by someone who has not seen the work. 03
 
 ## Code
 
-`src/sdt/` holds shared modules and one package per study. The shared modules (`data/`, `features.py`, `models.py`,
-`tune.py`, `twin/`, `experiment.py`) hold what every study uses, and they never import a study's package. A study's
-package (`mvp/`, `realtime/`) holds every choice of its preregistration, such as its windows, candidates and tests, and
-it never imports another study's package. A command that runs for a study writes to `experiments/<study>/`, so either
-its module or its arguments name the study. `tests/` mirrors `src/`, and `tests/test_layout.py` checks the import rules.
+`src/sdt/` holds shared modules and one package per study. The shared modules (`paths.py`, `experiment.py`, `data/`,
+`features.py`, `models.py`, `tune.py`, `twin/`) hold what every study uses, and they never import a study's package. A
+study's package (`mvp/`, `realtime/`, listed in `experiment.STUDIES`) holds every choice of its preregistration, such
+as its windows, candidates and tests, and it never imports another study's package. A command that runs for a study
+writes to `experiments/<study>/`, so either its module or its arguments name the study. The tests of each module sit at
+the matching path in `tests/` (`tests/twin/test_run.py` for `src/sdt/twin/run.py`), and `tests/test_layout.py` checks
+the import rules.
 
 ## Experiments
 
-Each run writes a new folder `experiments/<stage>/<YYYY-MM-DD>-<description>/` at one commit, recorded in its
+Each run writes a new folder `experiments/<study>/<YYYY-MM-DD>-<description>/` at one commit, recorded in its
 `run.json`, and nothing changes the folder afterwards. The description says what the run contains
 (`supervised-demographics-state`). Rescoring or refitting is a new run.

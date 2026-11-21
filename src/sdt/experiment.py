@@ -1,12 +1,14 @@
-"""Bookkeeping shared by every run: the commit that produced it, a clean working tree and file hashes.
+"""Bookkeeping shared by every run: the studies, the commit that produced a run, a clean working tree and file hashes.
 
 Each run writes a new folder experiments/<study>/<YYYY-MM-DD>-<description>/ and records in its run.json the commit
-(`git('rev-parse', 'HEAD')`) and the SHA-256 of every input file that is not in git.
+(`git('rev-parse', 'HEAD')`) and the SHA-256 of data.csv and of any earlier run's files it reads, which are not in git.
 """
 import hashlib
 import subprocess
 
 from sdt.paths import EXPERIMENTS, ROOT
+
+STUDIES = ['mvp', 'realtime']       # each has a package sdt.<study> and a folder experiments/<study>/
 
 
 def git(*args):

@@ -114,3 +114,13 @@ def test_run_checks_the_calibration_only_if_the_twin_run_wrote_one(sources, tmp_
     (copy / 'twins' / 'calibration.json').unlink()
     run('check', 'twins', 'supervised', source_dir=copy, out_dir=tmp_path / 'out', df=df)
     assert len(list((tmp_path / 'out').iterdir())) == 1
+
+
+def test_run_stops_if_a_twin_run_with_predictions_lacks_its_calibration(sources, tmp_path):
+    df, root = sources
+    copy = tmp_path / 'sources'
+    shutil.copytree(root, copy)
+    (copy / 'twins' / 'predictions.parquet').touch()
+    (copy / 'twins' / 'calibration.json').unlink()
+    with pytest.raises(RuntimeError, match='no calibration.json'):
+        run('check', 'twins', 'supervised', source_dir=copy, out_dir=tmp_path / 'out', df=df)
