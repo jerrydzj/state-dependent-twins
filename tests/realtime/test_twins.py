@@ -27,5 +27,6 @@ def test_twins_forecast_every_later_month_and_coincide_when_k_exceeds_the_web_mo
     by = {(r['candidate'], r['month'], r['item']): r['fav'] for r in rows}
     assert {m for (_, m, _) in by} == {202406, 202407} and len({c for (c, _, _) in by}) == 32
     for item in ['PAGO', 'DUR']:
-        assert by['shift/D+P/k3', 202407, item] == by['shift/D+P/kall', 202407, item] == by['shift/D+P/k6', 202407, item]
+        assert by['shift/D+P/k3', 202407, item] == by['shift/D+P/kall', 202407, item]
+        assert by['shift/D+P/k6', 202407, item] == by['shift/D+P/kall', 202407, item]
         assert by['shift/D+P/k1', 202407, item] != by['shift/D+P/kall', 202407, item]

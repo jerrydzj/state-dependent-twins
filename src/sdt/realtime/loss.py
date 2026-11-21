@@ -18,7 +18,6 @@ import pandas as pd
 from sdt.data.clean import CLASSES, OUTCOMES
 
 ITEMS = list(OUTCOMES)
-SHARES = ['fav', 'mid', 'unf']          # columns of predicted and actual shares, in CLASSES order
 
 
 def web_answers(df, item, months):

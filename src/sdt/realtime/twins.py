@@ -12,8 +12,8 @@ At data end e, for each input set, item and k:
    calibration months' web interviews (calibration.fit_calibration).
 5. Each fitted twin predicts the web interviews of every month the fit forecasts.
 
-A calibration with no maximum (an item with no fav or no unf answer in the calibration months) is left out, so the
-candidate has no fit at e.
+A calibration with no maximum (an item with no fav or no unf answer in the calibration months), or one that does not
+converge, is left out and recorded under `errors`, so the candidate has no fit at e.
 """
 import numpy as np
 
@@ -32,7 +32,7 @@ def fit_forecast(ctx, e):
     data end e, and the fitted a and b of each."""
     web_months = between(FIRST_WEB, e)
     forecast = targets(e, ctx.last_month)
-    rows, fits = [], {}
+    rows, fits, errors = [], {}, []
     for item in ITEMS:
         d = web_answers(ctx.df, item, web_months + forecast)
         y, w, month = d[item].astype(str).to_numpy(), d.WT.to_numpy(float), d.YYYYMM.to_numpy()
@@ -44,11 +44,12 @@ def fit_forecast(ctx, e):
                 mid = float(np.average(y[fit] == 'mid', weights=w[fit])) if item == 'DUR' else None
                 P = class_probs(raw, item, mid)
                 for model, scale in CALIBRATIONS.items():
+                    name = names.twin(model, fs, k)
                     try:
                         c = fit_calibration(P[fit], y[fit], w[fit], scale)
-                    except ValueError:
+                    except (ValueError, RuntimeError) as err:
+                        errors.append(f'{name}, {item}: {err}')
                         continue
-                    name = names.twin(model, fs, k)
                     fits.setdefault(name, {})[item] = {'a': c['a'], 'fav': c['fav'], 'unf': c['unf'],
                                                        **({'mid_share': mid} if mid is not None else {})}
                     if target.any():
@@ -56,4 +57,4 @@ def fit_forecast(ctx, e):
                         s = weighted_shares(Q, w[target], month[target])
                         rows += [{'candidate': name, 'data_end': e, 'month': m, 'item': item, **r.to_dict()}
                                  for m, r in s.iterrows()]
-    return rows, fits
+    return rows, {**fits, 'errors': errors}

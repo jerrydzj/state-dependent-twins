@@ -10,9 +10,9 @@
 import numpy as np
 import pandas as pd
 
-from sdt.realtime.months import add, targets, validation_months
+from sdt.realtime.months import OPERATING_HORIZON, add, targets, validation_months
 
-CLASSES = ['twin', 'simple']
+MODEL_CLASSES = ['twin', 'simple']
 
 
 def picks(L, candidates, pick_ends, last_month):
@@ -23,10 +23,10 @@ def picks(L, candidates, pick_ends, last_month):
     for o in pick_ends:
         V = validation_months(o)
         forecast = targets(o, last_month)
-        for cls in CLASSES:
+        for cls in MODEL_CLASSES:
             best, eligible = None, 0
             for c in candidates[candidates.cls == cls].sort_values('order').candidate:
-                needed = [loss.get((c, add(v, -2), v)) for v in V]
+                needed = [loss.get((c, add(v, -OPERATING_HORIZON), v)) for v in V]
                 if not V or any(x is None for x in needed) or any((c, o, t) not in loss for t in forecast):
                     continue
                 eligible += 1
@@ -47,7 +47,7 @@ def differences(L, pick_table, pairs):
     for t, h in pairs:
         o = add(t, -h)
         simple, twin = pick.get((o, 'simple')), pick.get((o, 'twin'))
-        if simple is None or twin is None:
+        if pd.isna(simple) or pd.isna(twin):
             raise ValueError(f'no pick of both classes at data end {o}, needed for month {t} at horizon {h}')
         ls, lt = loss[simple, o, t], loss[twin, o, t]
         rows.append({'month': t, 'horizon': h, 'data_end': o, 'simple': simple, 'twin': twin, 'simple_loss': ls,

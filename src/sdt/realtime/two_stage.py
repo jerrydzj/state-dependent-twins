@@ -8,14 +8,15 @@
 2. The respondent terms r_i are the 11 attributes in the logit encoding with NR (features.mnl_features without `web`),
    plus, on input sets with P, the four party x president products. Each column is standardized to weighted mean 0
    and standard deviation 1 on the fitting rows, as in models.Ridge.
-3. The fit minimizes the WT-weighted negative log-likelihood plus |beta|^2 / (2C), the objective of scikit-learn's
-   penalized logit.
+3. The fit minimizes the WT-weighted negative log-likelihood plus |beta|^2 / (2C), with C on the scale of
+   scikit-learn's penalized logit, so the C grid is that of notebook 04. Only the fav and unf contrasts against mid
+   are penalized, whereas scikit-learn's multinomial logit penalizes one coefficient vector per class.
 4. C is tuned by 5-fold cross-validation over interviews. After a shuffle (seed 0), interviews are dealt to folds in
    turn within each month and answer, so a month and answer with at least two interviews appears in the fitting rows
    of every fold. Each fold fits the C grid from the strongest penalty to none, starting each fit from the previous
    one that converged. A C whose fit does not converge in some fold, as happens without a penalty when an attribute
    level predicts its answers perfectly, gets an infinite loss. The chosen C has the lowest weighted log loss averaged
-   over the folds, and the model is refitted on every row.
+   over the folds, and the model is refitted on every interview of the months that have levels (step 5).
 5. A month in which some answer has no interviews has no finite level, because the likelihood keeps rising as that
    intercept moves. Such a month is left out of the fit (out of a fold's fit, and its validation rows, if the answer
    is missing from the fold's fitting rows) and has no level.
@@ -27,15 +28,19 @@ three ways:
 
 - `smooth-a<alpha>`: exponential smoothing over the levels of the web months, in order, starting from the first web
   month's level. The forecast is the smoothed level at e.
-- `level`: a ridge regression of every month's level on the input set's state variables. The forecast is its
-  prediction at month t's state variables.
-- `change`: the level at e plus beta . (x_t - x_e), where beta comes from a ridge regression, with an unpenalized
-  intercept, of every month-to-month change in level on the change in the state variables x. The forecast leaves the
-  intercept out, so it carries no trend forward. If month e has no level, the latest month with one takes its place.
+- `level-regression`: a ridge regression of every month's level on the input set's state variables. The forecast is
+  its prediction at month t's state variables.
+- `anchored-change`: the level at e plus beta . (x_t - x_e), where beta comes from a ridge regression, with an
+  unpenalized intercept, of every month-to-month change in level on the change in the state variables x. The
+  forecast leaves the intercept out, so it carries no trend forward. If month e has no level, the latest month with
+  one takes its place.
 
 Both regressions use only months with levels. Their state variables are standardized on the regression's rows, and
 the penalty is tuned over `stage2_alphas` (strongest first, then none) by month-blocked cross-validation with the
 folds of tune.month_folds on the stage-1 interviews, minimizing mean squared error averaged over the folds.
+
+If stage 1 has no maximum or does not converge at the chosen C, or no web month has a level, the candidates concerned
+have no fit at e, and the unit records why under `errors`.
 
 **Prediction.** A respondent's probabilities are the softmax of the forecast level plus web_c (every target interview
 is web) plus r_i . beta_c for fav and unf, and 0 for mid.
@@ -50,7 +55,7 @@ from sdt.data.state import POLITICS
 from sdt.features import FEATURE_SETS, mnl_demographics_politics_features, mnl_features, state_table
 from sdt.realtime import candidates as names
 from sdt.realtime.loss import web_answers, weighted_shares
-from sdt.realtime.months import FIRST_WEB, add, between, targets
+from sdt.realtime.months import FIRST_WEB, add, targets
 
 SPECS = {'D': ['demographics', 'demographics_macro'], 'D+P': ['demographics_politics', 'demographics_macro_politics']}
 CONTRASTS = ['fav', 'unf']
@@ -109,7 +114,6 @@ class StageOne:
     def __init__(self, d, item, spec, C_grid, n_folds=5, seed=0):
         self.spec = spec
         months = np.array(sorted(d.YYYYMM.unique()))
-        self.months_all = months
         month = np.searchsorted(months, d.YYYYMM.to_numpy())
         web = d.web.to_numpy(float)
         R = respondent_terms(d, spec)
@@ -170,14 +174,15 @@ class StageOne:
         sd[sd == 0] = 1
         Z = (R[rows] - mean) / sd
         if start is None:
-            counts = pd.DataFrame(Y[rows] * w[rows, None]).groupby(month[rows]).sum().reindex(range(n_months)).fillna(1.0)
+            counts = pd.DataFrame(Y[rows] * w[rows, None]).groupby(month[rows]).sum()
+            counts = counts.reindex(range(n_months)).fillna(1.0)       # months without rows: start at even odds
             counts = counts.to_numpy() + 1e-3
             start = np.concatenate([np.log(counts[:, [0, 2]] / counts[:, [1]]).ravel(), np.zeros(2 + 2 * R.shape[1])])
         inv_C = 0.0 if np.isinf(C) else 1 / C
         args = (month[rows], web[rows], Z, Y[rows], w[rows], n_months, inv_C, w[rows].sum())
         # ftol 1e-15 lets the fit stop on the gradient (gtol), so the score equations of step 1 hold closely
         res = minimize(objective, start, args=args, jac=True, method='L-BFGS-B',
-                       options={'maxiter': 20_000, 'ftol': 1e-15, 'gtol': 1e-8})
+                       options={'maxiter': 20_000, 'maxfun': 20_000, 'ftol': 1e-15, 'gtol': 1e-8})
         if not res.success:
             raise NotConverged(f'stage 1 did not converge at C = {C}: {res.message}')
         return res.x, mean, sd
@@ -216,18 +221,21 @@ def tuned_ridge(X, y, fold, alphas):
     return fit_ridge(X, y, alpha), alpha
 
 
-def stage_two(levels, e, fs, option, alphas, month_fold, state):
+def stage_two(levels, fs, option, alphas, month_fold, state):
     """The forecast level of each contrast at each month in `state` (the state variables of the target months), and
-    the chosen penalty per contrast (None for smoothing). `option` is 'level', 'change' or a smoothing alpha."""
+    the chosen penalty per contrast (None for smoothing). `option` is 'level-regression', 'anchored-change' or a
+    smoothing alpha. Raises ValueError if smoothing finds no web month with a level."""
     if isinstance(option, float):
         web = levels[levels.index >= FIRST_WEB]
+        if web.empty:
+            raise ValueError('no web month has a level')
         level = web.iloc[0].to_numpy()
         for m in web.index[1:]:
             level = option * web.loc[m].to_numpy() + (1 - option) * level
         return pd.DataFrame([level] * len(state), index=state.index, columns=CONTRASTS), None
     columns = FEATURE_SETS[fs]
     S = state_table(tuple(sorted(set(levels.index) | set(state.index))))[columns]
-    if option == 'level':
+    if option == 'level-regression':
         X, rows = S.loc[levels.index].to_numpy(float), levels.index
     else:
         rows = [m for m in levels.index if add(m, -1) in levels.index]
@@ -235,15 +243,16 @@ def stage_two(levels, e, fs, option, alphas, month_fold, state):
     fold = month_fold.loc[rows].to_numpy()
     out, chosen = {}, {}
     for c in CONTRASTS:
-        y = levels.loc[rows, c].to_numpy() if option == 'level' else (
+        y = levels.loc[rows, c].to_numpy() if option == 'level-regression' else (
             levels.loc[rows, c].to_numpy() - levels.loc[[add(m, -1) for m in rows], c].to_numpy())
         model, chosen[c] = tuned_ridge(X, y, fold, alphas)
-        if option == 'level':
+        if option == 'level-regression':
             out[c] = predict_ridge(model, state[columns].to_numpy(float))
         else:
             anchor = levels.index[-1]                                    # e, or the latest month before it with a level
             mean, sd, _, beta = model
-            out[c] = levels.loc[anchor, c] + ((state[columns].to_numpy(float) - S.loc[anchor].to_numpy(float)) / sd) @ beta
+            change = (state[columns].to_numpy(float) - S.loc[anchor].to_numpy(float)) / sd
+            out[c] = levels.loc[anchor, c] + change @ beta
     return pd.DataFrame(out, index=state.index), chosen
 
 
@@ -251,11 +260,14 @@ def fit_forecast(ctx, e, spec, item):
     """Forecast rows of every two-stage candidate of `spec` for one item at data end e, and the fitted settings."""
     train = ctx.df[ctx.df.YYYYMM <= e]
     d = train[train[item].notna()]
-    one = StageOne(d, item, spec, list(ctx.settings.stage1_C), ctx.settings.stage1_folds, ctx.settings.seed)
+    try:
+        one = StageOne(d, item, spec, list(ctx.settings.stage1_C), ctx.settings.stage1_folds, ctx.settings.seed)
+    except NotConverged as err:
+        return [], {'errors': [f'stage 1: {err}']}
     settings = {'C': None if np.isinf(one.C) else one.C,
                 'cv_log_loss': [None if np.isinf(x) else float(x) for x in one.cv],    # None: did not converge
                 'months_without_level': one.dropped, 'web_coef': dict(zip(CONTRASTS, one.web_coef.tolist())),
-                'stage2': {}}
+                'stage2': {}, 'errors': []}
     t = web_answers(ctx.df, item, targets(e, ctx.last_month))
     if t.empty:
         return [], settings
@@ -266,11 +278,17 @@ def fit_forecast(ctx, e, spec, item):
     rows = []
     for fs in SPECS[spec]:
         for option in names.STAGE_TWO[fs]:
-            opts = [(f'smooth-{names.alpha_name(a)}', float(a)) for a in ctx.settings.alphas] if option == 'smooth' \
-                else [(option, option)]
-            for label, opt in opts:
-                level, chosen = stage_two(one.levels, e, fs, opt, list(ctx.settings.stage2_alphas), month_fold, state)
+            if option == 'smooth':
+                options = [(f'smooth-{names.alpha_name(a)}', float(a)) for a in ctx.settings.alphas]
+            else:
+                options = [(option, option)]
+            for label, opt in options:
                 name = names.two_stage(fs, label)
+                try:
+                    level, chosen = stage_two(one.levels, fs, opt, list(ctx.settings.stage2_alphas), month_fold, state)
+                except ValueError as err:
+                    settings['errors'].append(f'{name}: {err}')
+                    continue
                 if chosen is not None:
                     settings['stage2'][name] = {c: float(a) for c, a in chosen.items()}
                 P = probabilities(level.loc[t.YYYYMM].to_numpy() + base)

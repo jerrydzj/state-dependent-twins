@@ -91,24 +91,45 @@ def test_ridge_with_no_penalty_is_least_squares():
     assert np.abs(fit_ridge(X, y, 1e6)[3]).max() < 0.01
 
 
-def stage_two_inputs(levels_of):
-    months = between(201702, 202405)
+def stage_two_inputs(levels_of, last=202405):
+    months = between(201702, last)
     S = state_table(tuple(between(201702, 202407)))
     levels = pd.DataFrame({c: levels_of(S.loc[months]) for c in ['fav', 'unf']}, index=pd.Index(months, name='month'))
     fold = pd.Series(np.arange(len(months)) % 5, index=months)
     return levels, fold, S.loc[[202406, 202407]]
 
 
-def test_stage_two_level_regression_and_anchored_change():
-    levels, fold, target = stage_two_inputs(lambda S: 0.5 + 0.2 * S.unrate - 0.1 * S.cpi)
-    level, chosen = stage_two(levels, 202405, 'demographics_macro', 'level', [0.0], fold, target)
-    assert np.allclose(level.fav, 0.5 + 0.2 * target.unrate - 0.1 * target.cpi) and chosen == {'fav': 0.0, 'unf': 0.0}
-    change, _ = stage_two(levels, 202405, 'demographics_macro', 'change', [0.0], fold, target)
-    assert np.allclose(change.unf, 0.5 + 0.2 * target.unrate - 0.1 * target.cpi)
+STATE_EFFECT = lambda S: 0.2 * S.unrate - 0.1 * S.cpi
+
+
+def test_stage_two_level_regression_predicts_at_the_target_state():
+    levels, fold, target = stage_two_inputs(lambda S: 0.5 + STATE_EFFECT(S))
+    level, chosen = stage_two(levels, 'demographics_macro', 'level-regression', [0.0], fold, target)
+    assert np.allclose(level.fav, 0.5 + STATE_EFFECT(target)) and chosen == {'fav': 0.0, 'unf': 0.0}
+
+
+def test_anchored_change_adds_the_state_effect_and_no_trend():
+    # Levels with a trend of 0.01 a month: the regression's intercept takes the trend, and the forecast leaves it out
+    levels, fold, target = stage_two_inputs(lambda S: 0.5 + 0.01 * np.arange(len(S)) + STATE_EFFECT(S))
+    change, _ = stage_two(levels, 'demographics_macro', 'anchored-change', [0.0], fold, target)
+    anchor = levels.loc[202405, 'unf']
+    S = state_table(tuple(between(201702, 202407)))
+    assert np.allclose(change.unf, anchor + STATE_EFFECT(target) - STATE_EFFECT(S.loc[[202405]]).iloc[0])
+
+
+def test_anchored_change_starts_from_the_latest_month_with_a_level():
+    levels, fold, target = stage_two_inputs(lambda S: 0.5 + STATE_EFFECT(S))
+    without_may = levels.drop(index=202405)
+    change, _ = stage_two(without_may, 'demographics_macro', 'anchored-change', [0.0], fold, target)
+    S = state_table(tuple(between(201702, 202407)))
+    expected = levels.loc[202404, 'fav'] + STATE_EFFECT(target) - STATE_EFFECT(S.loc[[202404]]).iloc[0]
+    assert np.allclose(change.fav, expected)
 
 
 def test_stage_two_smoothing_runs_over_web_months_only():
     levels, fold, target = stage_two_inputs(lambda S: np.arange(len(S), dtype=float))
     web = levels.loc[202404:].fav.to_numpy()                             # April and May 2024
-    level, chosen = stage_two(levels, 202405, 'demographics', 0.5, [0.0], fold, target)
+    level, chosen = stage_two(levels, 'demographics', 0.5, [0.0], fold, target)
     assert chosen is None and np.allclose(level.fav, 0.5 * web[1] + 0.5 * web[0])
+    with pytest.raises(ValueError, match='no web month'):
+        stage_two(levels.loc[:202403], 'demographics', 0.5, [0.0], fold, target)

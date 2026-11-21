@@ -55,17 +55,22 @@ def smoothing(alpha):
     return f'smooth/-/{alpha_name(alpha)}'
 
 
-def one_stage(family, fs, half_life):
-    return f'{family}/{INPUT_SETS[fs]}/{half_life_name(half_life)}'
+def ridge(fs, half_life):
+    return f'ridge/{INPUT_SETS[fs]}/{half_life_name(half_life)}'
+
+
+def boosting(fs, half_life):
+    return f'gb/{INPUT_SETS[fs]}/{half_life_name(half_life)}'
 
 
 def two_stage(fs, option):
     return f'two-stage/{INPUT_SETS[fs]}/{option}'
 
 
-# Stage-2 options per input set: smoothing does not use M, so it appears only on D and D+P (section 6, candidate 6)
-STAGE_TWO = {'demographics': ['smooth'], 'demographics_macro': ['level', 'change'],
-             'demographics_politics': ['smooth', 'level', 'change'], 'demographics_macro_politics': ['level', 'change']}
+# Stage-2 options per input set (section 6, candidate 6): smoothing does not use M, so it appears only on D and D+P
+REGRESSIONS = ['level-regression', 'anchored-change']
+STAGE_TWO = {'demographics': ['smooth'], 'demographics_macro': REGRESSIONS,
+             'demographics_politics': ['smooth', *REGRESSIONS], 'demographics_macro_politics': REGRESSIONS}
 
 
 def table(settings=Settings()):
@@ -73,8 +78,9 @@ def table(settings=Settings()):
     rows = [('twin', m, fs, k_name(k), twin(m, fs, k)) for m in ['shift', 'scale'] for fs in FEATURE_SETS
             for k in settings.ks]
     rows += [('simple', 'smooth', None, alpha_name(a), smoothing(a)) for a in settings.alphas]
-    rows += [('simple', f, fs, half_life_name(h), one_stage(f, fs, h)) for f in ['ridge', 'gb'] for fs in FEATURE_SETS
-             for h in settings.half_lives]
+    for model, name in [('ridge', ridge), ('gb', boosting)]:
+        rows += [('simple', model, fs, half_life_name(h), name(fs, h))
+                 for fs in FEATURE_SETS for h in settings.half_lives]
     for fs, options in STAGE_TWO.items():
         for option in options:
             names = [f'smooth-{alpha_name(a)}' for a in settings.alphas] if option == 'smooth' else [option]

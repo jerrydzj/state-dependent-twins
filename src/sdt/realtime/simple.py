@@ -1,9 +1,9 @@
-"""The simple-model candidates of the realtime-benchmark plan that fit respondents directly or smooth shares (section 6,
-candidates 3 to 5). The two-stage ridge is in two_stage.py.
+"""The simple-model candidates of the realtime-benchmark plan that smooth shares or fit respondents in one stage
+(section 6, candidates 3 to 5). The two-stage ridge is in two_stage.py.
 
 - **Exponential smoothing** (candidate 3): for each item and answer, with s_m its weighted share among month m's web
-  interviews, the level follows l_m = alpha s_m + (1 - alpha) l_(m-1) from l_(April 2024) = s_(April 2024). Every month a
-  fit at data end e forecasts gets the level at e.
+  interviews, the level follows l_m = alpha s_m + (1 - alpha) l_(m-1) from l_(April 2024) = s_(April 2024). Every
+  month a fit at data end e forecasts gets the level at e.
 - **One-stage ridge logit** (candidate 4): models.Ridge on the input set's logit encoding (features.ENCODERS), fitted
   to every interview from February 2017 to e with weights WT x 0.5^(a / half-life), where a is the interview's age in
   months at e. Its penalty is tuned by tune.tune_ridge on the same weights.
@@ -75,7 +75,7 @@ def ridge(ctx, e, fs, half_life, item):
     X, y, w = item_data(train, item, encode)
     model = Ridge(C).fit(X, y, sample_weight=w)
     d = web_answers(ctx.df, item, targets(e, ctx.last_month))
-    rows = forecast_rows(names.one_stage('ridge', fs, half_life), e, item, predict(model, encode(d)), d) if len(d) else []
+    rows = forecast_rows(names.ridge(fs, half_life), e, item, predict(model, encode(d)), d) if len(d) else []
     return rows, {'C': None if np.isinf(C) else C, 'cv_log_loss': [float(x) for x in cv]}
 
 
@@ -93,4 +93,4 @@ def gb_fit(ctx, e, fs, half_life, item, setting):
     X, y, w = item_data(training(ctx, e, half_life), item, encode)
     model = gb(**setting).fit(X, y, sample_weight=w)
     d = web_answers(ctx.df, item, targets(e, ctx.last_month))
-    return forecast_rows(names.one_stage('gb', fs, half_life), e, item, predict(model, encode(d)), d) if len(d) else []
+    return forecast_rows(names.boosting(fs, half_life), e, item, predict(model, encode(d)), d) if len(d) else []

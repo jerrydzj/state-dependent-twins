@@ -6,12 +6,12 @@ data end o scores each candidate by its forecasts at the operating point, L(c, v
 FIRST_WEB = 202404              # the first month with web interviews, and the first data end
 LAST_DATA_END = 202608
 LAST_MONTH = 202609             # the last target month
-FIRST_VALIDATION = 202406       # the first month v whose forecast from data end v - 2 exists
+FIRST_VALIDATION = 202406       # FIRST_WEB + OPERATING_HORIZON: the first month v with a fit at data end v - 2
 OPERATING_HORIZON = 2
 MAX_AHEAD = 12                  # each fit forecasts up to 12 months past its data end
 VALIDATION_MONTHS = 6
 TUNING_EVERY = 3                # boosting is tuned at the first data end and every third one after it
-HORIZONS = list(range(1, 13))
+HORIZONS = list(range(1, MAX_AHEAD + 1))
 PRIMARY = (202408, 202609)      # section 7: the 26 target months
 KNOWN = (202408, 202602)        # the 19 target months known before registration
 UNSEEN = (202603, 202609)       # the 7 unseen target months
@@ -37,7 +37,8 @@ def between(first, last):
 
 
 def data_ends(last_month=LAST_MONTH):
-    """The data ends of fits whose forecasts reach no later than `last_month`."""
+    """The data ends from April 2024 to LAST_DATA_END that precede `last_month`, so each fit forecasts at least one
+    month up to `last_month`."""
     return between(FIRST_WEB, min(LAST_DATA_END, add(last_month, -1)))
 
 

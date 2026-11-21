@@ -49,6 +49,7 @@ def test_curve_analysis_on_a_rising_curve():
     h = np.arange(1, 13)
     D = np.tile(0.01 * (h - 4.5), (16, 1)) + np.random.default_rng(2).normal(0, 0.001, size=(16, 12))
     curve, summary, drawn = curve_analysis(D, h)
-    assert summary['rho']['estimate'] == pytest.approx(1) and summary['slope']['estimate'] == pytest.approx(0.01, abs=1e-3)
+    assert summary['rho']['estimate'] == pytest.approx(1)
+    assert summary['slope']['estimate'] == pytest.approx(0.01, abs=1e-3)
     assert summary['breakeven']['estimate'] == pytest.approx(4.5, abs=0.1) and len(drawn) == 1000
     assert all(r['lo'] <= r['estimate'] <= r['hi'] for r in summary.values())
