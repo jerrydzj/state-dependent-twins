@@ -73,8 +73,8 @@ def clean(raw):
     return out.reset_index(drop=True)
 
 
-def load_raw():
-    return pd.read_csv(RAW_CSV, skipinitialspace=True, usecols=RAW_COLUMNS)
+def load_raw(path=RAW_CSV):
+    return pd.read_csv(path, skipinitialspace=True, usecols=RAW_COLUMNS)
 
 
 if __name__ == '__main__':

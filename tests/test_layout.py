@@ -55,7 +55,8 @@ sys.meta_path.insert(0, Block())
 
 def test_calibration_and_scoring_import_without_pytorch():
     # A fresh interpreter in which importing torch or transformers fails, as on a machine without the `twin` extra
-    code = BLOCK_PYTORCH + 'import sdt.features, sdt.twin.calibration, sdt.mvp.twin_calibration, sdt.mvp.twin_score'
+    code = BLOCK_PYTORCH + ('import sdt.features, sdt.twin.calibration, sdt.mvp.twin_calibration, sdt.mvp.twin_score, '
+                            'sdt.realtime.run')
     result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     blocked = subprocess.run([sys.executable, '-c', BLOCK_PYTORCH + 'import sdt.twin.readout'], capture_output=True)
