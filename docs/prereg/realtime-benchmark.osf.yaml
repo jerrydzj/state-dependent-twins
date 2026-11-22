@@ -1,0 +1,35 @@
+# Values entered on OSF for prereg/realtime-benchmark (see README.md)
+tag: prereg/realtime-benchmark
+commit: 7d3617fbe8dadce12e70eadf5b48ef34ce6a577e
+osf_url: https://osf.io/gh42n   # DOI 10.17605/OSF.IO/GH42N
+registered: 2026-11-22T01:29:12Z
+template: Open-Ended Registration
+title: A real-time benchmark of LLM twins against simple models on the Michigan Surveys of Consumers
+description: realtime-benchmark.md, verbatim
+contributors: [Jerry Ding]
+license: CC-By Attribution 4.0 International
+subjects:
+  - Physical Sciences and Mathematics > Computer Sciences > Artificial Intelligence and Robotics
+  - Social and Behavioral Sciences > Economics
+tags:
+  - large language models
+  - digital twins
+  - synthetic respondents
+  - silicon sampling
+  - consumer sentiment
+  - Surveys of Consumers
+  - real-time forecasting
+  - forecast evaluation
+  - Diebold-Mariano test
+  - Llama 3.1
+summary: |-
+  This registration preregisters a comparison of LLM twins with simple models at predicting the monthly answer shares of the five items of the Index of Consumer Sentiment in the University of Michigan Surveys of Consumers, from August 2024 to September 2026. The twins are Llama 3.1 8B Instruct, recalibrated each month to the answers of the latest one, three, six or all months with web interviews. The simple models are exponential smoothing, one-stage ridge logits, gradient boosting and a two-stage ridge. A forecast of a month uses the answers available on its forecast date, the state variables as then published and the attributes of that month's respondents. Each month, every candidate is refitted on the answers then available, and each class uses its candidate whose recent forecasts were most accurate.
+
+  The plan states the question, what was known before registration, the data, the forecast task, the procedure, the 92 candidates, one two-sided primary test with its decision rule, a secondary analysis, the scope of exploratory analyses and the execution. The primary test compares the two classes when the latest available answers are two months old. The secondary analysis describes how the comparison changes with the age of the latest available answers, from one to twelve months.
+
+  When the plan was registered, every answer up to February 2026 was known, as were the results of an earlier preregistered study of the same survey (prereg/mvp-twin, https://osf.io/ahgkw) and of later exploratory checks on those months. Of March to September 2026, only the published shares of one item, PAGO, had been seen, and neither the answers nor the twin probabilities had been obtained. Apart from the forecasts of notebooks 03 to 06, all from data ending in July 2024, no forecast of a month from August 2024 on had been made at a horizon of two months or more. The plan discloses these facts in its section 2.
+
+  The plan is frozen as git tag prereg/realtime-benchmark at commit 7d3617fbe8dadce12e70eadf5b48ef34ce6a577e (https://github.com/jerrydzj/state-dependent-twins/tree/prereg/realtime-benchmark). That commit also fixes the code that implements the plan: the twin prompts, model revision and option-probability readout, the candidates and their settings, the selection rule and the statistics. The attached file is an archive of the repository at that tag.
+supplemental_files:
+  - state-dependent-twins-prereg-realtime-benchmark.zip
+visibility: public immediately
