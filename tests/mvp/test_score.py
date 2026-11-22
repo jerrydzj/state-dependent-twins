@@ -39,8 +39,8 @@ def test_windows_match_interview_dates():
     win = pd.read_csv(DATA / 'external' / 'sca' / 'interview_windows.csv', parse_dates=['interview_end'])
     assert win.loc[win.interview_end < HORIZON, 'YYYYMM'].max() == TRAIN_END
     assert win.YYYYMM[win.YYYYMM > TRAIN_END].min() == EVAL_START
-    train, test = split(pd.DataFrame({'YYYYMM': [201702, 202407, 202408, 202602]}))
-    assert train.YYYYMM.tolist() == [201702, 202407] and test.YYYYMM.tolist() == [202408, 202602]
+    train, test = split(pd.DataFrame({'YYYYMM': [201701, 201702, 202407, 202408, 202602, 202603]}))
+    assert train.YYYYMM.tolist() == [201702, 202407] and test.YYYYMM.tolist() == [202408, 202602]   # 19 months only
 
 
 @pytest.mark.skipif(not RAW_CSV.exists(), reason='data/data.csv not downloaded')
@@ -150,12 +150,12 @@ def test_cell_keeps_its_interviews_counts_from_the_window_draws():
 
 
 def test_cells_partition_the_evaluation_window():
-    months = [202407, 202408, 202410, 202411, 202501, 202502, 202602]
-    df = pd.DataFrame({'CASEID': range(14), 'YYYYMM': months * 2,
-                       'POLAFF': pd.Categorical(['Rep', 'Dem', 'Ind', None, 'Rep', 'Dem', 'Ind'] * 2)})
+    months = [202407, 202408, 202410, 202411, 202501, 202502, 202602, 202603]
+    df = pd.DataFrame({'CASEID': range(16), 'YYYYMM': months * 2,
+                       'POLAFF': pd.Categorical(['Rep', 'Dem', 'Ind', None, 'Rep', 'Dem', 'Ind', 'Rep'] * 2)})
     out = {(p, g): d for p, g, d in cells(df)}
     assert list(out) == [(p, g) for p in ['all', *PERIODS] for g in ['all', *GROUPS]]
-    assert set(out['all', 'all'].YYYYMM) == set(months) - {202407}                    # evaluation window only
+    assert set(out['all', 'all'].YYYYMM) == set(months) - {202407, 202603}            # evaluation window only
     assert {p: sorted(set(out[p, 'all'].YYYYMM)) for p in PERIODS} == {
         'Baseline': [202408, 202410], 'Flip': [202411, 202501], 'Tariffs': [202502, 202602]}
     assert sum(len(out[p, 'all']) for p in PERIODS) == len(out['all', 'all'])          # periods don't overlap

@@ -6,8 +6,10 @@ from sdt.data.clean import FIRST_MONTH
 HORIZON = pd.Timestamp('2024-07-23')    # Llama 3.1 release, the twin's knowledge horizon
 TRAIN_START = FIRST_MONTH               # W1
 TRAIN_END = 202407                      # W2: last interview window closing before HORIZON (closes 22 Jul 2024)
-EVAL_START = 202408                     # W3: through the last archived month, which was EVAL_END when
-EVAL_END = 202602                       # prereg/mvp-twin fixed the window at these 19 months; later releases add months
+# W3: from EVAL_START through the last archived month when prereg/mvp-twin fixed the window (19 months); later
+# releases add months that it leaves out
+EVAL_START = 202408
+EVAL_END = 202602
 
 
 def split(df):

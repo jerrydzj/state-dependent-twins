@@ -58,8 +58,8 @@ def test_window_starts_feb_2017():
 def test_real_data():
     df = clean(load_raw())                                 # raises if any raw code is outside the spec
     assert df.CASEID.is_unique and df.YYYYMM.min() == 201702
-    # The months profiled before cleaning (2026-10-15 download), which later releases keep: their size, and missing
-    # and answer shares
+    # Months to February 2026, profiled on the 2026-10-15 release, which later releases keep: their size, missing shares
+    # and one answer share
     df = df[df.YYYYMM <= 202602]
     assert len(df) == 77_050
     web = df[df.web == 1]

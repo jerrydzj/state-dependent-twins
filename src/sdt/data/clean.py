@@ -29,9 +29,11 @@ ORDERED = {
     'YTL5': ({q: q for q in range(1, 6)}, []),
     'AGE': ({a: a for a in range(18, 98)}, []),            # 97 = 97 or older
     'NUMKID': ({k: k for k in range(0, 6)}, []),           # 5 = 5 or more
-    'NUMADT': ({k: k for k in range(1, 6)} | {6: 5, 7: 5}, [8, 9]),   # web missing is blank to Nov 2024, code 9 after
-    # NUMADT: 5 = 5 or more. The release of 2026-11-21 holds 7 for 3 interviews of 202408-202410 that the archive
-    # revised "to correctly reflect internal topcoding"; a count above the top code is 5 or more
+    # NUMADT: 5 = 5 or more. The 2026-11-21 release holds 7 for 3 web interviews of 202408-202410 that the archive
+    # revised "to correctly reflect internal topcoding", so 6 and 7 read as 5 or more. 8 stays missing, as in
+    # prereg/mvp-twin: phone interviews hold no 6 or 7, so their 8 is not a count. Web interviews code missing as
+    # blank in 202404-202411 and as 9 from 202406.
+    'NUMADT': ({k: k for k in range(1, 6)} | {6: 5, 7: 5}, [8, 9]),
     'EDUC': ({1: 1, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5}, []),    # 1-2 merged: no HS diploma
 }
 UNORDERED = {
