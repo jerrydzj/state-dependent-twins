@@ -29,7 +29,9 @@ ORDERED = {
     'YTL5': ({q: q for q in range(1, 6)}, []),
     'AGE': ({a: a for a in range(18, 98)}, []),            # 97 = 97 or older
     'NUMKID': ({k: k for k in range(0, 6)}, []),           # 5 = 5 or more
-    'NUMADT': ({k: k for k in range(1, 6)}, [8, 9]),       # web missing is blank to Nov 2024, code 9 after
+    'NUMADT': ({k: k for k in range(1, 6)} | {6: 5, 7: 5}, [8, 9]),   # web missing is blank to Nov 2024, code 9 after
+    # NUMADT: 5 = 5 or more. The release of 2026-11-21 holds 7 for 3 interviews of 202408-202410 that the archive
+    # revised "to correctly reflect internal topcoding"; a count above the top code is 5 or more
     'EDUC': ({1: 1, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5}, []),    # 1-2 merged: no HS diploma
 }
 UNORDERED = {

@@ -43,6 +43,7 @@ def test_unknown_code_raises(col, code):
 
 def test_recodes():
     assert [one(EDUC=e).EDUC[0] for e in range(1, 7)] == [1, 1, 2, 3, 4, 5]
+    assert [one(NUMADT=k).NUMADT[0] for k in range(1, 8)] == [1, 2, 3, 4, 5, 5, 5]      # top-coded at 5 or more
     assert one(INVEST=5).INVEST[0] == 0
     assert one(METHOD=2).web[0] == 1
     assert one(POLAFF=3).POLAFF[0] == 'Ind'
@@ -56,10 +57,13 @@ def test_window_starts_feb_2017():
 @pytest.mark.skipif(not RAW_CSV.exists(), reason='data/data.csv not downloaded')
 def test_real_data():
     df = clean(load_raw())                                 # raises if any raw code is outside the spec
-    assert len(df) == 77_050 and df.CASEID.is_unique
+    assert df.CASEID.is_unique and df.YYYYMM.min() == 201702
+    # The months profiled before cleaning (2026-10-15 download), which later releases keep: their size, and missing
+    # and answer shares
+    df = df[df.YYYYMM <= 202602]
+    assert len(df) == 77_050
     web = df[df.web == 1]
     assert web.YYYYMM.min() == 202404
-    # Missing shares from the pre-cleaning profile (2026-10-15 download)
     assert web.AGE.isna().mean() == pytest.approx(0.128, abs=0.005)
     assert web.POLAFF.isna().mean() == pytest.approx(0.104, abs=0.005)
     assert (web.BUS12 == 'mid').mean() == pytest.approx(0.359, abs=0.005)
