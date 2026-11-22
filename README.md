@@ -71,9 +71,10 @@ survey.
 - `notebooks/` records the work in the order it happened, and [notebook 06](notebooks/06_mvp_twin_test.ipynb) reports
   the results. A later notebook or the preregistration replaces any earlier plan it contradicts.
 - `docs/prereg/` holds [the plan](docs/prereg/mvp-twin.md), frozen by the git tag `prereg/mvp-twin` and registered on
-  OSF.
-- `src/sdt/` holds the code: shared modules for the data, features, models and twins, and the study's own package
-  `sdt.mvp`. Each module's docstring says how to run it.
+  OSF, and the plan of a second study, [a real-time benchmark](docs/prereg/realtime-benchmark.md) of the twins against
+  simple models, frozen by `prereg/realtime-benchmark` and registered at https://osf.io/gh42n.
+- `src/sdt/` holds the code: shared modules for the data, features, models and twins, and one package per study,
+  `sdt.mvp` and `sdt.realtime`. Each module's docstring says how to run it.
 - `experiments/` holds one folder per run, never changed afterwards. Its `run.json` records the commit, the SHA-256 of
   the microdata and the package versions, and `experiments/mvp/2026-11-05-twin-prereg-scores/` holds the scores reported
   above.
@@ -83,7 +84,8 @@ survey.
 
 ## Reproducing
 
-1. **Get the 2026-10-15 release of `data.csv`** into `data/`, and check its SHA-256 against the one in `data/README.md`.
+1. **Get the 2026-10-15 release of `data.csv`** into `data/` as `data.csv`, and check its SHA-256 against the one in
+   `data/README.md`.
    The archive revises past months, so a download today is a later release, which the scoring commands refuse.
 2. **Install the package** with `uv venv --python 3.14 .venv` and `uv pip install -e '.[dev,twin]'`, then build the
    clean table with `.venv/bin/python -m sdt.data.clean`.

@@ -1,6 +1,7 @@
 # External and derived data (added 2026-10-18)
 
-Nothing in this folder modifies or replaces the files pulled from the Surveys of Consumers site on 2026-10-15 (the parent `data/` folder).
+Nothing in this folder modifies or replaces the files pulled from the Surveys of Consumers site (the parent `data/`
+folder).
 
 - `fred/` — macro series downloaded from FRED on 2026-10-18 (latest vintage). Five copyrighted series are not in git.
   See `fred/README.md`.
@@ -16,5 +17,5 @@ Nothing in this folder modifies or replaces the files pulled from the Surveys of
   day after the October window closed, since 235 of the other 313 windows from 2000-01 to 2026-02 start one or two
   days after the previous one ends. A news report of the 13 November release says interviews began on 28 October.
   Any start from 14 October to 3 November gives the same latest CPI and unemployment releases and the same election
-  winner (before the 3 November election). `tests/test_data.py` checks that every window starts before it ends and
-  before its preliminary release.
+  winner (before the 3 November election). `tests/data/test_interview_windows.py` checks that every window starts
+  before it ends and before its preliminary release.

@@ -32,4 +32,5 @@ A later download is a later vintage, so it can differ from the 2026-10-18 pull.
 Caveats: these are revised, latest-vintage values. Respondents and models at interview time saw first releases with a publication lag
 (e.g., CPI for month m is published mid m+1). Features must therefore be lagged to what was public during each survey's interview window
 (see `Release and Interview Dates.pdf`). ALFRED real-time vintages are the stricter alternative.
-UMCSENT and MICH extend past the microdata (which end in February 2026), so they also support aggregate-only checks for later months.
+UMCSENT and MICH, as downloaded on 2026-10-18, extend past February 2026, where the 2026-10-15 microdata release ended. The
+realtime-benchmark study does not look at their values for March to September 2026 before its scoring run.

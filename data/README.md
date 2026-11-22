@@ -5,8 +5,9 @@
 The microdata come from the University of Michigan Surveys of Consumers data site, https://data.sca.isr.umich.edu
 (the Cross-Section Archive, `/sda.php`), downloaded with all 118 variables as a CSV file with its codebook and setup
 files. They are not in git: the site's usage agreement (https://data.sca.isr.umich.edu/agreement.php) licenses the data
-CC BY-NC-ND for research use, without the right to redistribute. The code reads only `data.csv`; download it into this
-folder to run it.
+CC BY-NC-ND for research use, without the right to redistribute. The code reads `data.csv`; download it into this folder
+to run it. The realtime run's reproduction check (`src/sdt/realtime/run.py`, `PREVIOUS_DATA`) also reads the
+2026-10-15 release as `data-2026-10-15.csv`.
 
 The archive grows as months are released, and it occasionally revises past months (see `Data Updates and
 Revisions.pdf`), so each download is a release, identified by the SHA-256 of its `data.csv`. Every run records that
@@ -17,8 +18,8 @@ there as `data/data.csv`.
 
 | Release | `data.csv` | Used by |
 |---|---|---|
-| 2026-11-21 (plain names) | 351,096 rows, survey months 197801–202609; 146,407,768 bytes, SHA-256 `cdfef6f86b23b9c73966a2c59e4c5ab015bb2dc5e0bde29a163f373f38b331b6` | `prereg/realtime-benchmark` |
-| 2026-10-15 (suffix `-2026-10-15`) | 342,345 rows, survey months 197801–202602; 143,100,946 bytes, SHA-256 `5e0a7e1cd2a04e8378e43bc1b4316b4bb5387241bb40744f0c50c6f7cd49ca22` | `prereg/mvp-twin`, and the realtime run's check that its twin probabilities reproduce those of `prereg/mvp-twin` |
+| 2026-11-21 (plain names) | 351,096 rows, survey months 197801–202609; 146,407,768 bytes, SHA-256 `cdfef6f86b23b9c73966a2c59e4c5ab015bb2dc5e0bde29a163f373f38b331b6` | The realtime-benchmark runs (`experiments/realtime/`) |
+| 2026-10-15 (suffix `-2026-10-15`) | 342,345 rows, survey months 197801–202602; 143,100,946 bytes, SHA-256 `5e0a7e1cd2a04e8378e43bc1b4316b4bb5387241bb40744f0c50c6f7cd49ca22` | Every run in `experiments/mvp/`, notebooks 01 to 06, and the realtime run's reproduction check |
 
 | File | Contents |
 |---|---|
@@ -27,15 +28,24 @@ there as `data/data.csv`.
 | `DDI XML.txt` | DDI codebook; the only source of labels for the open-ended reason codes |
 | `SAS.txt`, `SPSS.txt`, `STATA.txt`, `SDA DDL.txt` | Setup files generated with the CSV download |
 
-The 2026-11-21 release adds the 8,751 interviews of March to September 2026 (the archive's update of 2026-11-12). It
-holds the same interviews in every earlier month, but within each month from February 2017 to June 2024 they come in a
-different order, mostly the phone interviews; the web interviews keep their order. Of the interviews in both releases,
-it changes five values: `NEWS2` for 1 interview of 202405, `HOMEAMT` for 1 interview
-of 202408, and `NUMADT` for 3 interviews of 202408 to 202410, which were blank and now hold 7. The archive revised
-these "to correctly reflect internal topcoding", and its codebook now labels 5 as "5 or more" with valid codes 1 to 5
-and missing codes from 9, so the cleaning (`src/sdt/data/clean.py`) reads 7 as 5 or more. In the codebook entries of
-the other variables the studies read, only page and column positions changed, apart from the wording of `DATEPR`'s
-label ("data month" for "date" of the previous interview).
+The 2026-11-21 release adds the 8,751 interviews of March to September 2026, all on the web (the archive's update of
+2026-11-12), and holds the same interviews in every earlier month. The 2026-10-15 release lists each month's interviews
+by `CASEID`. The 2026-11-21 release lists them in another order in every month from January 1978 to June 2024 except
+November 1981: the phone interviews change order, and the web interviews keep their order among themselves. The order
+matters to the realtime study's two-stage ridge, whose cross-validation folds follow it.
+
+Of the interviews in both releases, the 2026-11-21 release changes five values: `NEWS2` for 1 interview of May 2024,
+`HOMEAMT` for 1 interview of August 2024 (with `HOMEOPEN`, which is not among the 118 variables), and `NUMADT` for 3 web
+interviews of August to October 2024, which were blank and now hold 7. The archive revised the `NUMADT` values "to
+correctly reflect internal topcoding", and its codebook now labels 5 as "5 or more", with valid codes 1 to 5 and
+missing codes from 9. So the cleaning (`src/sdt/data/clean.py`) reads 6 and 7 as 5 or more and keeps 8 missing, as
+before. This reading departs from `prereg/realtime-benchmark`, whose cleaning raised on 7, and the realtime report lists
+it.
+
+In the codebook entries of the other variables the studies read, apart from page and column positions, three changed.
+`DATEPR`'s label says "data month" for "date". `AGE` now gives valid codes 17 to 97, although no interview from
+February 2017 on holds 17. `HOMEOWN` is relabelled "Home ownership", with 1 "Owns home" and 2 "Does not own home" for
+"Owns or is buying" and "Rent"; the codes are unchanged, but the twin prompts still describe 2 as "you rent your home".
 
 Documentation PDFs from the same site, downloaded on 2026-10-15 unless stated:
 
@@ -48,9 +58,8 @@ Documentation PDFs from the same site, downloaded on 2026-10-15 unless stated:
   (`src/sdt/twin/prompts.py`) is identical in both
 - `Time Series Codebook.pdf`, `Index Calculation.pdf`, `Procedure to Estimate Price Expectations.pdf`
 - `Release and Interview Dates.pdf`, `Historical Prelim:Final Release Dates.pdf`
-- `Data Updates and Revisions.pdf`: the version of 2026-11-22 (https://data.sca.isr.umich.edu/fetchdoc.php?docid=80741),
-  which covers the 2026-11-12 update; the version downloaded on 2026-10-15 is `Data Updates and
-  Revisions-2026-10-15.pdf`
+- `Data Updates and Revisions.pdf`: downloaded on 2026-11-21 (https://data.sca.isr.umich.edu/fetchdoc.php?docid=80741);
+  it covers the 2026-11-12 update. The version downloaded on 2026-10-15 is `Data Updates and Revisions-2026-10-15.pdf`
 - `Current versus Pre-Pandemic Long-Run Inflation Expectations.pdf`,
   `January 2026 Update- Current versus Pre-Pandemic Long-Run Inflation Expectations.pdf`
 - `States by Region.pdf`
