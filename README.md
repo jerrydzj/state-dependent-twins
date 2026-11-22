@@ -83,7 +83,8 @@ survey.
 
 ## Reproducing
 
-1. **Download `data.csv`** into `data/` as `data/README.md` describes, and check its SHA-256 against the one there.
+1. **Get the 2026-10-15 release of `data.csv`** into `data/`, and check its SHA-256 against the one in `data/README.md`.
+   The archive revises past months, so a download today is a later release, which the scoring commands refuse.
 2. **Install the package** with `uv venv --python 3.14 .venv` and `uv pip install -e '.[dev,twin]'`, then build the
    clean table with `.venv/bin/python -m sdt.data.clean`.
 3. **Run the models:** `.venv/bin/python -m sdt.mvp.supervised <description>` fits the supervised models, and

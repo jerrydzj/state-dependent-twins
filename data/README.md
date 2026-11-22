@@ -27,8 +27,10 @@ there as `data/data.csv`.
 | `DDI XML.txt` | DDI codebook; the only source of labels for the open-ended reason codes |
 | `SAS.txt`, `SPSS.txt`, `STATA.txt`, `SDA DDL.txt` | Setup files generated with the CSV download |
 
-The 2026-11-21 release adds the 8,751 interviews of March to September 2026 (the archive's update of 2026-11-12). Of
-the interviews in both releases, it changes five values: `NEWS2` for 1 interview of 202405, `HOMEAMT` for 1 interview
+The 2026-11-21 release adds the 8,751 interviews of March to September 2026 (the archive's update of 2026-11-12). It
+holds the same interviews in every earlier month, but within each month from February 2017 to June 2024 they come in a
+different order, mostly the phone interviews; the web interviews keep their order. Of the interviews in both releases,
+it changes five values: `NEWS2` for 1 interview of 202405, `HOMEAMT` for 1 interview
 of 202408, and `NUMADT` for 3 interviews of 202408 to 202410, which were blank and now hold 7. The archive revised
 these "to correctly reflect internal topcoding", and its codebook now labels 5 as "5 or more" with valid codes 1 to 5
 and missing codes from 9, so the cleaning (`src/sdt/data/clean.py`) reads 7 as 5 or more. In the codebook entries of
