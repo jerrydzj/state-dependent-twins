@@ -20,8 +20,8 @@ that the twins' advantage rises with the horizon.
 Every answer up to February 2026 is known, as are all results of notebooks 03 to 06 (`prereg/mvp-twin`) and later
 exploratory checks on those months, including persistence and twins recalibrated on the previous month's answers, of
 which persistence matched or beat the twins. Of March to September 2026, only the published shares of one item, `PAGO`,
-were seen during drafting. Apart from notebook 06's forecasts from data ending in July 2024, no forecast at a horizon of
-two months or more has been made.
+were seen during drafting. Apart from the forecasts of notebooks 03 to 06, all from data ending in July 2024, no
+forecast of a month from August 2024 on has been made at a horizon of two months or more.
 
 ## 3. Data
 
