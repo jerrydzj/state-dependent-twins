@@ -37,26 +37,26 @@ the plan, neither class is shown more accurate.
   \centering
   \caption{The primary test over all target months, the months known before registration and the unseen months.}
   \label{tab:primary}
-  \begin{tabular}{@{}lccc@{}}
+  \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lccc@{}}
     \toprule
     & All months & Known & Unseen \\
     & \R{primary.span} & \R{known.span} & \R{unseen.span} \\
     \midrule
     Months & \R{primary.T} & \R{known.T} & \R{unseen.T} \\
     $\bar d$ & \R{primary.mean} & \R{known.mean} & \R{unseen.mean} \\
-    95\% interval & \R{primary.lo} to \R{primary.hi} & \R{known.lo} to \R{known.hi}
-      & \R{unseen.lo} to \R{unseen.hi} \\
+    95\% interval & [\R{primary.lo}, \R{primary.hi}] & [\R{known.lo}, \R{known.hi}]
+      & [\R{unseen.lo}, \R{unseen.hi}] \\
     \addlinespace
     \multicolumn{4}{@{}l}{\emph{As a share of avoidable loss}} \\
     $\bar d$ & \R{primary.share} & \R{known.share} & \R{unseen.share} \\
-    95\% interval & \R{primary.share.lo} to \R{primary.share.hi}
-      & \R{known.share.lo} to \R{known.share.hi} & \R{unseen.share.lo} to \R{unseen.share.hi} \\
+    95\% interval & [\R{primary.share.lo}, \R{primary.share.hi}]
+      & [\R{known.share.lo}, \R{known.share.hi}] & [\R{unseen.share.lo}, \R{unseen.share.hi}] \\
     \addlinespace
     Statistic & \R{primary.stat} & \R{known.stat} & \R{unseen.stat} \\
-    Degrees of freedom & \R{primary.df} & \R{known.df} & \R{unseen.df} \\
+    $\mathit{df}$ & \R{primary.df} & \R{known.df} & \R{unseen.df} \\
     $p$ & \R{primary.p} & \R{known.p} & \R{unseen.p} \\
     \bottomrule
-  \end{tabular}
+  \end{tabular*}
 \end{table}
 
 \section{Secondary analysis}

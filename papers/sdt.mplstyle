@@ -1,0 +1,43 @@
+# The figure style of every paper; a paper's inputs.py loads it with plt.style.context. Figures are saved as .pgf, so
+# LaTeX typesets their text in the paper's fonts.
+
+# Text: Latin Modern, as in sdt-paper.cls, at 10pt, the size of tables and captions (\small in an 11pt paper)
+pgf.texsystem: pdflatex
+pgf.rcfonts: False
+pgf.preamble: \usepackage[T1]{fontenc}\usepackage{lmodern}
+font.family: serif
+font.size: 10
+axes.labelsize: 10
+axes.titlesize: 10
+xtick.labelsize: 10
+ytick.labelsize: 10
+legend.fontsize: 10
+
+# matplotlib's 5% padding around the data stays: it is in data units, the one gap off the ladder.
+
+# Size: the text width (360pt, 4.98in) by the text width over the golden ratio. A narrow figure is 3.08in by 1.90in.
+# The outermost ink touches the figure's edges, so a full-width figure is flush with the text.
+figure.figsize: 4.98, 3.08
+figure.constrained_layout.use: True
+figure.constrained_layout.w_pad: 0
+figure.constrained_layout.h_pad: 0
+
+# Gaps and weights on the ladder of sdt-paper.cls (points): ticks 3.82 long, labels 3.82 from ticks and 4.86 from
+# axes; axes and ticks as thin as a table's middle rule (0.5), data one golden step above its heavy rule (1.31)
+axes.linewidth: 0.5
+xtick.major.width: 0.5
+ytick.major.width: 0.5
+xtick.major.size: 3.82
+ytick.major.size: 3.82
+xtick.major.pad: 3.82
+ytick.major.pad: 3.82
+axes.labelpad: 4.86
+lines.linewidth: 1.31
+lines.markersize: 4.86
+axes.spines.top: False
+axes.spines.right: False
+legend.frameon: False
+
+# Colors by meaning: C0 is the twins, C1 the simple models, C2 anything that belongs to neither, such as a difference
+# between them. Reference lines are grey 0.65 and 0.5pt.
+axes.prop_cycle: cycler('color', ['2a78d6', 'eb6834', '262626'])

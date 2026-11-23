@@ -26,18 +26,7 @@ from sdt.realtime import RUNS                                                   
 RUN = RUNS / '2026-11-22-benchmark'
 BUILD = Path(__file__).parent / 'build'
 
-# Figures are typeset by LaTeX at their natural size, so these follow sdt-paper.cls
-TEXTWIDTH = 6.0                                                                 # inches
-FIGURE_STYLE = {
-    'pgf.texsystem': 'pdflatex',
-    'pgf.rcfonts': False,
-    'pgf.preamble': r'\usepackage[T1]{fontenc}\usepackage{lmodern}',
-    'font.family': 'serif',
-    'font.size': 9,
-    'axes.linewidth': 0.6,
-    'xtick.major.width': 0.6,
-    'ytick.major.width': 0.6,
-}
+STYLE = Path(__file__).parents[1] / 'sdt.mplstyle'                              # shared by every paper
 
 
 def tracked(path):
@@ -100,16 +89,15 @@ def numbers_tex(values):
 def curve_figure(s, path):
     h = list(range(1, 13))
     d = [s['curve'][str(k)] for k in h]
-    with plt.rc_context(FIGURE_STYLE):
-        fig, ax = plt.subplots(figsize=(0.7 * TEXTWIDTH, 2.4), layout='constrained')
-        ax.axhline(0, color='0.65', lw=0.6)
-        ax.plot(h, d, color='0.1', lw=1, marker='o', ms=3.5)
+    with plt.style.context(STYLE):
+        fig, ax = plt.subplots()
+        ax.axhline(0, color='0.65', lw=0.5)
+        ax.plot(h, d, color='C2', marker='o')
         ax.set_xticks(h)
         ax.yaxis.set_major_locator(MultipleLocator(0.002))
         ax.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'${y:.3f}$'))
         ax.set_xlabel(r'Horizon $h$ (months)')
         ax.set_ylabel(r'$\bar d(h)$')
-        ax.spines[['top', 'right']].set_visible(False)
         fig.savefig(path)
         plt.close(fig)
 

@@ -72,13 +72,15 @@ A notebook is read once, top to bottom, by someone who has not seen the work. 03
 
 ## Papers
 
-`papers/` holds the shared design (`sdt-paper.cls`), references (`refs.bib`, `acl_natbib.bst`) and `render`, plus one
-folder per paper, such as `papers/realtime-benchmark/`, with its text `<name>.tex` and `inputs.py`. `inputs.py` writes
-every quoted number, as `\R{key}` (an unknown key stops the build), and every figure to `build/`. It reads only files
-tracked by git, and stops on any other, so a paper builds from a clone. An analysis that needs the microdata or the
-twin probabilities runs as an experiment that saves aggregates for `inputs.py`. Papers build with pdflatex, because
-arXiv has no LuaLaTeX. Every `refs.bib` entry comes from its DOI (`curl -LH "Accept: application/x-bibtex"
-https://doi.org/<doi>`) or arXiv record, never from memory.
+`papers/` holds the shared design (`sdt-paper.cls`, `sdt.mplstyle`), references (`refs.bib`, `acl_natbib.bst`) and
+`render`, plus one folder per paper, such as `papers/realtime-benchmark/`, with its text `<name>.tex` and `inputs.py`.
+`inputs.py` writes every quoted number, as `\R{key}` (an unknown key stops the build), and every figure to `build/`. It
+reads only files tracked by git, and stops on any other, so a paper builds from a clone. An analysis that needs the
+microdata or the twin probabilities runs as an experiment that saves aggregates for `inputs.py`. Papers build with
+pdflatex, because arXiv has no LuaLaTeX. Every `refs.bib` entry comes from its DOI (`curl -LH "Accept:
+application/x-bibtex" https://doi.org/<doi>`) or arXiv record, never from memory. A table or figure spans the text width
+(a table with `tabular*`) or the text width over the golden ratio, with a caption of the same width. A figure loads
+`sdt.mplstyle`, where color C0 is the twins and C1 the simple models.
 
 `papers/render <name> [--watch]` builds a draft in `build/` (ignored), stamped with its date and commit. Readers see
 only releases, named by date and made when a number, claim or figure changes or a version is posted to SSRN or arXiv:
