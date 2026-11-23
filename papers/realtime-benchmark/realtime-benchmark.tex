@@ -1,0 +1,79 @@
+\documentclass{sdt-paper}
+
+\title{A real-time benchmark of LLM twins against simple models}
+\author{Jerry Ding}
+
+\input{build/numbers}
+
+\begin{document}
+\maketitle
+
+\section{Plan and deviations}
+
+This paper reports the primary test and the secondary analysis of the preregistered real-time benchmark of LLM twins
+against simple models. The plan, \path{docs/prereg/realtime-benchmark.md}, is frozen by the git tag
+\path{prereg/realtime-benchmark} and registered at \url{https://osf.io/gh42n}. It defines the forecast task, the
+candidates, the procedure and every statistic below. The primary test is the test of \citet{diebold1995}, with the
+fixed-smoothing variance of \citet{coroneo2020}. The statistics come from the run \R{run}, which computed them once from
+the twin probabilities of \R{twins}.
+
+The run departs in one respect from the code that the tag froze. The data release it uses, downloaded on 2026-11-21,
+holds the code 7 for \texttt{NUMADT} in 3 web interviews of August to October 2024, a code that the cleaning at the
+tag did not accept. The cleaning at the run's commit reads it as 5 or more (commit \texttt{c2fe1ec};
+\path{data/README.md}).
+
+\section{Primary test}
+
+Over the \R{primary.T} target months from \R{primary.first} to \R{primary.last}, at a horizon of two months,
+$\bar d$ is \R{primary.mean}, with a 95\% interval from \R{primary.lo} to \R{primary.hi}. As a share of the simple
+pick's avoidable loss, $\bar d$ is \R{primary.share}, with an interval from \R{primary.share.lo} to
+\R{primary.share.hi}. A positive $\bar d$ means that the twin pick's loss is the lower. The statistic is
+\R{primary.stat} with \R{primary.df} degrees of freedom, so $p = \R{primary.p}$. By the decision rule of section 7 of
+the plan, neither class is shown more accurate.
+
+\Cref{tab:primary} also reports the two subperiods of section 7, to which the plan attaches no decision rule.
+
+\begin{table}[t]
+  \centering
+  \caption{The primary test over all target months, the months known before registration and the unseen months.}
+  \label{tab:primary}
+  \begin{tabular}{@{}lccc@{}}
+    \toprule
+    & All months & Known & Unseen \\
+    & \R{primary.span} & \R{known.span} & \R{unseen.span} \\
+    \midrule
+    Months & \R{primary.T} & \R{known.T} & \R{unseen.T} \\
+    $\bar d$ & \R{primary.mean} & \R{known.mean} & \R{unseen.mean} \\
+    95\% interval & \R{primary.lo} to \R{primary.hi} & \R{known.lo} to \R{known.hi}
+      & \R{unseen.lo} to \R{unseen.hi} \\
+    \addlinespace
+    \multicolumn{4}{@{}l}{\emph{As a share of avoidable loss}} \\
+    $\bar d$ & \R{primary.share} & \R{known.share} & \R{unseen.share} \\
+    95\% interval & \R{primary.share.lo} to \R{primary.share.hi}
+      & \R{known.share.lo} to \R{known.share.hi} & \R{unseen.share.lo} to \R{unseen.share.hi} \\
+    \addlinespace
+    Statistic & \R{primary.stat} & \R{known.stat} & \R{unseen.stat} \\
+    Degrees of freedom & \R{primary.df} & \R{known.df} & \R{unseen.df} \\
+    $p$ & \R{primary.p} & \R{known.p} & \R{unseen.p} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Secondary analysis}
+
+Over the \R{curve.T} target months from \R{curve.first} to \R{curve.last}, $\bar d(h)$ is computed for horizons $h$
+of 1 to 12 months (\cref{fig:curve}). Its Spearman correlation with the horizon, $\rho$, is \R{rho}, with a 95\%
+interval from \R{rho.lo} to \R{rho.hi}. Its least-squares slope is \R{slope} per month of horizon, with an interval
+from \R{slope.lo} to \R{slope.hi}. Its breakeven horizon is \R{breakeven} months, with an interval from
+\R{breakeven.lo} to \R{breakeven.hi}. Section 8 of the plan attaches no decision rule to these quantities.
+
+\begin{figure}[t]
+  \centering
+  \input{build/curve.pgf}
+  \caption{$\bar d(h)$ over the \R{curve.T} target months from \R{curve.first} to \R{curve.last}, by horizon $h$.}
+  \label{fig:curve}
+\end{figure}
+
+\bibliography{refs}
+
+\end{document}

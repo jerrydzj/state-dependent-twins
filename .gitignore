@@ -21,3 +21,6 @@ experiments/**/chunks/
 
 # Local secrets (FRED API key)
 .env
+
+# Drafts and build files of papers/render; a paper's releases are tracked in its folder
+papers/*/build/

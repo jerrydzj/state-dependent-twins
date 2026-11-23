@@ -31,8 +31,9 @@ Optional body.
 - Subject: imperative mood ("add", not "added"); lowercase after the colon except identifiers and proper nouns
   (`PX1`, `Llama 3.1`, `FRED`); at most 72 characters; ASCII only; no trailing period; no scopes.
 - Commit straight to `main` unless asked to branch. Keep history linear (rebase, don't merge). Annotated tags mark
-  snapshots that write-ups cite (`v0.1-mvp`) and frozen predictions (`prereg/<name>`). Git dates are self-reported, so
-  also register each `prereg/` tag on OSF, following `docs/prereg/README.md`.
+  snapshots that write-ups cite (`v0.1-mvp`), paper releases (`paper/<name>/<YYYY-MM-DD>`) and frozen predictions
+  (`prereg/<name>`). Git dates are self-reported, so also register each `prereg/` tag on OSF, following
+  `docs/prereg/README.md`.
 
 ```
 data: add FRED macro series and SCA interview windows
@@ -68,6 +69,29 @@ A notebook is read once, top to bottom, by someone who has not seen the work. 03
   order it happens, instead of compressing several into one claim ("noise can only increase a distance").
 - **Write like a person, not a model.** Make the actor the subject and the action the verb. Cut any phrase that carries
   no information, such as an abstract label for something concrete ("Two views show both scores"), a hedge or filler.
+
+## Papers
+
+`papers/` holds the shared design (`sdt-paper.cls`), references (`refs.bib`, `acl_natbib.bst`) and `render`, plus one
+folder per paper, such as `papers/realtime-benchmark/`, with its text `<name>.tex` and `inputs.py`. `inputs.py` writes
+every quoted number, as `\R{key}` (an unknown key stops the build), and every figure to `build/`. It reads only files
+tracked by git, and stops on any other, so a paper builds from a clone. An analysis that needs the microdata or the
+twin probabilities runs as an experiment that saves aggregates for `inputs.py`. Papers build with pdflatex, because
+arXiv has no LuaLaTeX. Every `refs.bib` entry comes from its DOI (`curl -LH "Accept: application/x-bibtex"
+https://doi.org/<doi>`) or arXiv record, never from memory.
+
+`papers/render <name> [--watch]` builds a draft in `build/` (ignored), stamped with its date and commit. Readers see
+only releases, named by date and made when a number, claim or figure changes or a version is posted to SSRN or arXiv:
+
+1. Commit the sources and run `papers/render <name> --release <YYYY-MM-DD>` (it refuses uncommitted sources). It stamps
+   "This version: <date>", copies the PDF and `environment.txt` (exact Python, package and TeX Live versions) into the
+   paper's folder, and writes the arXiv bundle `build/arxiv.tar.gz`, checked to compile on its own.
+2. Commit those two files alone (`docs: release the <name> paper of <YYYY-MM-DD>`) and tag the commit
+   `paper/<name>/<YYYY-MM-DD>` (annotated).
+3. Publish a GitHub Release of the tag with the PDF and a changelog: which reported numbers moved and by about how
+   much, and where the version was posted.
+
+Rerun at its tag in the recorded environment, a release rebuilds byte for byte.
 
 ## Code
 

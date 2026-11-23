@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Usage: papers/render <name> [--watch]
+#        papers/render <name> --release <YYYY-MM-DD>
+# The first form builds a draft of papers/<name>/<name>.tex in papers/<name>/build/. Its title page names the date and
+# the commit it was built from. --watch rebuilds it on every save.
+# The second form builds the release of that date from committed sources. Its title page says "This version: <date>".
+# It copies the PDF and environment.txt into papers/<name>/ and writes build/arxiv.tar.gz, the source to upload to
+# arXiv, after checking that the bundle compiles on its own. Rerun at the release's tag, it gives the same PDF.
+set -euo pipefail
+
+usage='usage: papers/render <name> [--watch | --release <YYYY-MM-DD>]'
+name=${1:?$usage}
+mode=${2:-}
+shared=$(cd "$(dirname "$0")" && pwd)
+cd "$shared/$name"
+python=../../.venv/bin/python
+releases=github.com/jerrydzj/state-dependent-twins/releases
+
+# The paper's uncommitted sources: changes in its folder or the shared files, and changed run outputs
+uncommitted() {
+  git status --porcelain -- . ../sdt-paper.cls ../acl_natbib.bst ../refs.bib ../render \
+    ":(exclude)$name.pdf" ":(exclude)environment.txt"
+  git status --porcelain --untracked-files=no -- ../../experiments
+}
+long_date() {
+  "$python" -c 'import datetime, sys; d = datetime.date.fromisoformat(sys.argv[1]); print(f"{d.day} {d:%B %Y}")' "$1"
+}
+
+mkdir -p build
+if [[ $mode == --release ]]; then
+  date=${3:?$usage}
+  [[ $date =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || { echo "$usage" >&2; exit 1; }
+  if [[ -n $(uncommitted) ]]; then
+    echo "Commit the paper's sources before a release:" >&2
+    uncommitted >&2
+    exit 1
+  fi
+  line="This version: $(long_date "$date"). Every version: \\href{https://$releases}{$releases}"
+else
+  line="Draft of $(long_date "$(date +%F)"), commit $(git rev-parse --short HEAD)"
+  [[ -z $(uncommitted) ]] || line+=" with uncommitted changes"
+fi
+printf '\\newcommand\\sdtversion{%s}\n' "$line" > build/version.tex
+"$python" inputs.py
+
+# The shared files are found in papers/. Dates and the file ID are left out of the PDF, so the same inputs give the
+# same file.
+export TEXINPUTS=".:$shared:" BSTINPUTS=".:$shared:" BIBINPUTS=".:$shared:"
+pretex='\pdfinfoomitdate=1\pdftrailerid{}\pdfsuppressptexinfo=-1'
+options=(-pdf -outdir=build -interaction=nonstopmode -halt-on-error -file-line-error -usepretex="$pretex")
+if [[ $mode == --watch ]]; then
+  exec latexmk "${options[@]}" -pvc -view=none "$name.tex"
+fi
+latexmk "${options[@]}" -quiet "$name.tex"
+if [[ $mode != --release ]]; then
+  echo "Draft: papers/$name/build/$name.pdf"
+  exit
+fi
+cp "build/$name.pdf" "$name.pdf"
+cp build/environment.txt environment.txt
+
+# arXiv runs plain pdflatex on the bundle, so compile it the same way in a clean folder
+rm -rf build/arxiv build/arxiv-check build/arxiv.tar.gz
+mkdir -p build/arxiv/build build/arxiv-check
+cp "$name.tex" "build/$name.bbl" ../sdt-paper.cls ../acl_natbib.bst build/arxiv/
+cp build/numbers.tex build/version.tex build/*.pgf build/arxiv/build/
+tar -czf build/arxiv.tar.gz -C build/arxiv .
+tar -xzf build/arxiv.tar.gz -C build/arxiv-check
+(cd build/arxiv-check && unset TEXINPUTS BSTINPUTS BIBINPUTS \
+  && for _ in 1 2 3; do pdflatex -interaction=nonstopmode -halt-on-error "$name.tex" >/dev/null; done)
+
+echo "Release: papers/$name/$name.pdf; arXiv bundle: papers/$name/build/arxiv.tar.gz"
+echo "Next: commit $name.pdf and environment.txt alone, tag the commit paper/$name/$date and publish a GitHub Release."
