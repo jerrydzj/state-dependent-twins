@@ -1,0 +1,164 @@
+{
+ "name": "2026-11-22-benchmark",
+ "commit": "e120ab352eedb5d1babb082d9f3e00a027ccdab8",
+ "data_csv_sha256": "cdfef6f86b23b9c73966a2c59e4c5ab015bb2dc5e0bde29a163f373f38b331b6",
+ "twins": {
+  "name": "2026-11-22-twin-web",
+  "commit": "c32cb806eae39a79cb9b28f5598d9896fa636437",
+  "option_probs_sha256": "189eddd1b04a35c4cd2b2c9fc891eaad3fc0bb78d61c2c44b8a63fdb3a927f2b",
+  "data_csv_sha256": "cdfef6f86b23b9c73966a2c59e4c5ab015bb2dc5e0bde29a163f373f38b331b6",
+  "model": "meta-llama/Llama-3.1-8B-Instruct",
+  "revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+  "batch_size": 16
+ },
+ "reproduction": {
+  "previous_run": "2026-11-05-twin-prereg-eval",
+  "prompts_compared": 468740,
+  "max_abs_difference": 0.0,
+  "share_identical": 1.0,
+  "interviews_with_changed_inputs": [
+   321650,
+   322339,
+   323516
+  ],
+  "interviews_added": 8751,
+  "interviews_removed": 0
+ },
+ "date": "2026-11-23",
+ "runtime_seconds_last_session": 23542,
+ "python": "3.14.10",
+ "packages": {
+  "numpy": "2.5.4",
+  "pandas": "3.0.6",
+  "scipy": "1.18.1",
+  "scikit-learn": "1.9.1"
+ },
+ "last_month": 202609,
+ "workers": 32,
+ "settings": {
+  "ks": [
+   1,
+   3,
+   6,
+   null
+  ],
+  "alphas": [
+   1.0,
+   0.9,
+   0.8,
+   0.7,
+   0.6,
+   0.5,
+   0.4,
+   0.3,
+   0.2,
+   0.1
+  ],
+  "half_lives": [
+   null,
+   12,
+   36
+  ],
+  "ridge_C": [
+   0.0001,
+   0.00031622776601683794,
+   0.001,
+   0.0031622776601683794,
+   0.01,
+   0.03162277660168379,
+   0.1,
+   0.31622776601683794,
+   1.0,
+   3.1622776601683795,
+   10.0,
+   31.622776601683793,
+   100.0,
+   null
+  ],
+  "gb_grid": [
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 50
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 200
+   },
+   {
+    "max_leaf_nodes": 4,
+    "min_samples_leaf": 800
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 50
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 200
+   },
+   {
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 800
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 50
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 200
+   },
+   {
+    "max_leaf_nodes": 16,
+    "min_samples_leaf": 800
+   }
+  ],
+  "gb_max_trees": 1000,
+  "stage1_C": [
+   0.0001,
+   0.00031622776601683794,
+   0.001,
+   0.0031622776601683794,
+   0.01,
+   0.03162277660168379,
+   0.1,
+   0.31622776601683794,
+   1.0,
+   3.1622776601683795,
+   10.0,
+   31.622776601683793,
+   100.0,
+   null
+  ],
+  "stage2_alphas": [
+   10000.0,
+   3162.277660168379,
+   1000.0,
+   316.2277660168379,
+   100.0,
+   31.622776601683796,
+   10.0,
+   3.162277660168379,
+   1.0,
+   0.31622776601683794,
+   0.1,
+   0.03162277660168379,
+   0.01,
+   0.0
+  ],
+  "stage1_folds": 5,
+  "seed": 0
+ },
+ "units": 4428,
+ "unit_seconds_by_kind": {
+  "gb": 6690,
+  "gb_tuning": 417294,
+  "ridge": 184625,
+  "smoothing": 2,
+  "twins": 52,
+  "two_stage": 127707
+ },
+ "units_with_errors": {},
+ "forecast_rows": 129720,
+ "candidates": 92
+}
